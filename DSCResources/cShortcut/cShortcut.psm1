@@ -291,9 +291,7 @@ function New-Shortcut
             Write-Error $_.Exception
         }
 
-        if ($PSBoundParameters.PassThru)
-        {
-            Write-Verbose ("Show Result for shortcut result for target file name '{0}'" -f $TargetPath)
+        if ($PSBoundParameters.PassThru) {
             $shortCut
         }
     }
