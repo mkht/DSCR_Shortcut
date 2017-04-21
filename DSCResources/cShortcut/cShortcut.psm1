@@ -202,7 +202,6 @@ function New-Shortcut
             Position = 0,
             Mandatory,
             ValueFromPipelineByPropertyName)]
-        [validateScript({Test-Path $_})]
         [Alias('Target')]
         [string]$TargetPath,
 
