@@ -12,7 +12,7 @@
 # RootModule = ''
 
 # このモジュールのバージョン番号です。
-ModuleVersion = '1.0.3'
+ModuleVersion = '1.1.0'
 
 # このモジュールを一意に識別するために使用される ID
 GUID = 'dc24c0c9-ad6b-4fce-9ce4-2410f9ce4f7f'
@@ -24,7 +24,7 @@ Author = 'maki'
 CompanyName = 'HarmonyPlus'
 
 # このモジュールの著作権情報
-Copyright = '(c) 2016 maki. All rights reserved.'
+Copyright = '(c) 2017 maki. All rights reserved.'
 
 # このモジュールの機能の説明
 # Description = ''
