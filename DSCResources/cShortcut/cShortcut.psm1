@@ -270,6 +270,12 @@ function New-Shortcut
             'minimized' { $NumofWindowStyle = 7 }
         }
 
+        #Remove existing shortcut
+        if(Test-Path $path){
+            Write-Verbose ("Remove existing shortcut file")
+            Remove-Item $path -Force -ErrorAction SilentlyContinue
+        }
+
         # Call Wscript to create Shortcut
         Write-Verbose ("Trying to create Shortcut for name '{0}'" -f $path)
         try{
