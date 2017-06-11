@@ -41,6 +41,10 @@ function Get-TargetResource {
         [System.String]
         $Description,
 
+        [parameter()]
+        [System.String]
+        $Icon,
+
         [ValidateSet("normal", "maximized", "minimized")]
         [System.String]
         $WindowStyle = [WindowStyle]::normal
@@ -67,7 +71,8 @@ function Get-TargetResource {
         Target           = $shortcut.TargetPath
         WorkingDirectory = $shortcut.WorkingDirectory
         Arguments        = $shortcut.Arguments
-        Description        = $shortcut.Description
+        Description      = $shortcut.Description
+        Icon             = $shortcut.IconLocation
         WindowStyle      = [WindowStyle]::undefined
     }
 
@@ -106,6 +111,10 @@ function Set-TargetResource {
         [parameter()]
         [System.String]
         $Description,
+
+        [parameter()]
+        [System.String]
+        $Icon,
 
         [ValidateSet("normal", "maximized", "minimized")]
         [System.String]
@@ -161,6 +170,10 @@ function Test-TargetResource {
         [System.String]
         $Description,
 
+        [parameter()]
+        [System.String]
+        $Icon,
+
         [ValidateSet("normal", "maximized", "minimized")]
         [System.String]
         $WindowStyle = [WindowStyle]::normal
@@ -199,6 +212,7 @@ function Test-TargetResource {
                  -and ($Info.WorkingDirectory -eq $WorkingDirectory)`
                   -and ($Info.Arguments -eq $Arguments)`
                    -and ($Info.Description -eq $Description)`
+                   -and ($Info.Icon -eq $Icon)`
                     -and ($Info.WindowStyle -eq $WindowStyle)
             }
         }
@@ -245,6 +259,11 @@ function New-Shortcut {
         # [validateScript({Test-Path $_})]
         [string]$WorkingDirectory,
 
+        # Set IconLocation for shortcut.
+        [parameter(
+            ValueFromPipelineByPropertyName)]
+        [string]$Icon,
+
         # Set WindowStyle for shortcut.
         [parameter(
             ValueFromPipelineByPropertyName)]
@@ -290,6 +309,9 @@ function New-Shortcut {
             $shortCut.WindowStyle = [int][WindowStyle]$WindowStyle
             $shortCut.Arguments = $Arguments
             $shortCut.WorkingDirectory = $WorkingDirectory
+            if($Icon){
+                $shortCut.IconLocation = $Icon
+            }
             $shortCut.Save()
             Write-Verbose ('Shortcut file created successfully')
         }
