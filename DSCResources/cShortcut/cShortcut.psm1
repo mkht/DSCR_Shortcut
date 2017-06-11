@@ -172,7 +172,7 @@ function Test-TargetResource {
 
         [parameter()]
         [System.String]
-        $Icon,
+        $Icon = ',0',
 
         [ValidateSet("normal", "maximized", "minimized")]
         [System.String]
@@ -309,7 +309,7 @@ function New-Shortcut {
             $shortCut.WindowStyle = [int][WindowStyle]$WindowStyle
             $shortCut.Arguments = $Arguments
             $shortCut.WorkingDirectory = $WorkingDirectory
-            if($Icon){
+            if($PSBoundParameters.ContainsKey('Icon')){
                 $shortCut.IconLocation = $Icon
             }
             $shortCut.Save()
