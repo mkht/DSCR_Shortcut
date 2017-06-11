@@ -3,14 +3,13 @@
     Present
 }
 
-function Get-TargetResource
-{
+function Get-TargetResource {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
     param
     (
         [parameter()]
-        [ValidateSet("Present","Absent")]
+        [ValidateSet("Present", "Absent")]
         [System.String]
         $Ensure = 'Present',
 
@@ -30,46 +29,44 @@ function Get-TargetResource
         [System.String]
         $Arguments,
 
-        [ValidateSet("normal","maximized","minimized")]
+        [ValidateSet("normal", "maximized", "minimized")]
         [System.String]
         $WindowStyle = "normal"
     )
 
-    if(-not $Path.EndsWith('.lnk')){
+    if (-not $Path.EndsWith('.lnk')) {
         Write-Verbose ("File extentison is not 'lnk'. Automatically add extension")
         $Path = $Path + '.lnk'
     }
 
     $Ensure = [Ensure]::Present
-    
+
     # check file exists
-    if(-not (Test-Path $Path)){
+    if (-not (Test-Path $Path)) {
         Write-Verbose 'File not found.'
         $Ensure = [Ensure]::Absent
     }
-    else{
+    else {
         $shortcut = Get-Shortcut $Path -ErrorAction Continue
     }
     $returnValue = @{
-        Ensure = $Ensure
-        Path = $Path
-        Target = $shortcut.TargetPath
+        Ensure           = $Ensure
+        Path             = $Path
+        Target           = $shortcut.TargetPath
         WorkingDirectory = $shortcut.WorkingDirectory
-        Arguments = $shortcut.Arguments
-        WindowStyle = $shortcut.WindowStyle
+        Arguments        = $shortcut.Arguments
+        WindowStyle      = $shortcut.WindowStyle
     }
 
     $returnValue
 } # end of Get-TargetResource
 
-
-function Set-TargetResource
-{
+function Set-TargetResource {
     [CmdletBinding()]
     param
     (
         [parameter()]
-        [ValidateSet("Present","Absent")]
+        [ValidateSet("Present", "Absent")]
         [System.String]
         $Ensure = 'Present',
 
@@ -89,22 +86,22 @@ function Set-TargetResource
         [System.String]
         $Arguments,
 
-        [ValidateSet("normal","maximized","minimized")]
+        [ValidateSet("normal", "maximized", "minimized")]
         [System.String]
         $WindowStyle = "normal"
     )
 
-    if(-not $Path.EndsWith('.lnk')){
+    if (-not $Path.EndsWith('.lnk')) {
         Write-Verbose ("File extentison is not 'lnk'. Automatically add extension")
         $Path = $Path + '.lnk'
     }
 
     # Ensure = "Absent"
-    if($Ensure -eq [Ensure]::Absent){
+    if ($Ensure -eq [Ensure]::Absent) {
         Write-Verbose ('Remove shortcut file "{0}"' -f $Path)
         Remove-Item $Path -Force
     }
-    else{
+    else {
         # Ensure = "Present"
         $arg = $PSBoundParameters
         $arg.Remove('Ensure')
@@ -113,15 +110,13 @@ function Set-TargetResource
 
 } # end of Set-TargetResource
 
-
-function Test-TargetResource
-{
+function Test-TargetResource {
     [CmdletBinding()]
     [OutputType([System.Boolean])]
     param
     (
         [parameter()]
-        [ValidateSet("Present","Absent")]
+        [ValidateSet("Present", "Absent")]
         [System.String]
         $Ensure = 'Present',
 
@@ -141,7 +136,7 @@ function Test-TargetResource
         [System.String]
         $Arguments,
 
-        [ValidateSet("normal","maximized","minimized")]
+        [ValidateSet("normal", "maximized", "minimized")]
         [System.String]
         $WindowStyle = "normal"
     )
@@ -157,7 +152,7 @@ function Test-TargetResource
     #>
 
     # 拡張子つける
-    if(-not $Path.EndsWith('.lnk')){
+    if (-not $Path.EndsWith('.lnk')) {
         Write-Verbose ("File extentison is not 'lnk'. Automatically add extension")
         $Path = $Path + '.lnk'
     }
@@ -172,16 +167,16 @@ function Test-TargetResource
     $ReturnValue = $true
 
     switch ($Ensure) {
-        'Absent' { 
+        'Absent' {
             # ファイルがなければ$true あれば$false
             $ReturnValue = (-not (Test-Path $Path -PathType Leaf))
-         }
+        }
         'Present' {
             $Info = Get-TargetResource -Ensure $Ensure -Path $Path -Target $Target
-            if($Info.Ensure -eq [Ensure]::Absent){
+            if ($Info.Ensure -eq [Ensure]::Absent) {
                 $ReturnValue = $false
             }
-            else{
+            else {
                 $ReturnValue = ($Info.Target -eq $Target) -and ($Info.WorkingDirectory -eq $WorkingDirectory) -and ($Info.Arguments -eq $Arguments) -and ($Info.WindowStyle -eq $NumofWindowStyle)
             }
         }
@@ -190,9 +185,7 @@ function Test-TargetResource
     return $ReturnValue
 } # end of Test-TargetResource
 
-
-function New-Shortcut
-{
+function New-Shortcut {
     [CmdletBinding()]
     [OutputType([System.__ComObject])]
     param
@@ -233,31 +226,29 @@ function New-Shortcut
         # Set WindowStyle for shortcut.
         [parameter(
             ValueFromPipelineByPropertyName)]
-        [ValidateSet('normal','maximized','minimized')]
+        [ValidateSet('normal', 'maximized', 'minimized')]
         [string]$WindowStyle = 'normal',
 
         # set if you want to show create shortcut result
         [switch]$PassThru
     )
 
-    begin
-    {
+    begin {
         $extension = ".lnk"
         $wsh = New-Object -ComObject Wscript.Shell
     }
 
-    process
-    {
+    process {
         # set Path for Shortcut
-        if(-not $Path.EndsWith('.lnk')){
+        if (-not $Path.EndsWith('.lnk')) {
             $Path = $Path + $extension
         }
-        
-        if(-not (Test-Path (Split-Path $Path -Parent))){
+
+        if (-not (Test-Path (Split-Path $Path -Parent))) {
             Write-Verbose ("Create parent folder")
             New-Item -Path (Split-Path $Path -Parent) -ItemType Directory -Force -ErrorAction Stop
         }
-        
+
         $fileName = Split-Path $Path -Leaf  # Filename of shortcut
         $Directory = Resolve-Path (Split-Path $Path -Parent) # Directory of shortcut
         $Path = Join-Path $Directory $fileName  # Fullpath of shortcut
@@ -270,14 +261,14 @@ function New-Shortcut
         }
 
         #Remove existing shortcut
-        if(Test-Path $path){
+        if (Test-Path $path) {
             Write-Verbose ("Remove existing shortcut file")
             Remove-Item $path -Force -ErrorAction SilentlyContinue
         }
 
         # Call Wscript to create Shortcut
         Write-Verbose ("Trying to create Shortcut for name '{0}'" -f $path)
-        try{
+        try {
             $shortCut = $wsh.CreateShortCut($path)
             $shortCut.TargetPath = $TargetPath
             $shortCut.Description = $Description
@@ -287,7 +278,7 @@ function New-Shortcut
             $shortCut.Save()
             Write-Verbose ('Shortcut file created successfully')
         }
-        catch [Exception]{
+        catch [Exception] {
             Write-Error $_.Exception
         }
 
@@ -296,11 +287,10 @@ function New-Shortcut
         }
     }
 
-    end{}
+    end {}
 }
 
-function Get-Shortcut
-{
+function Get-Shortcut {
     [CmdletBinding()]
     [OutputType([System.__ComObject])]
     param
@@ -310,22 +300,22 @@ function Get-Shortcut
             Position = 0,
             Mandatory,
             ValueFromPipeline)]
-        [validateScript({$_ | % {Test-Path $_}})]
+        [validateScript( {$_ | % {Test-Path $_}})]
         [string[]]$Path
     )
-    begin{
+    begin {
         $wsh = New-Object -ComObject Wscript.Shell
     }
 
-    Process{
-        $Path.ForEach({
-            $fullPath = Resolve-Path $_
-            Write-Verbose ('Trying to get file properties from "{0}"' -f $fullPath)
-            $wsh.CreateShortcut($fullPath.Path)
-        })
+    Process {
+        $Path.ForEach( {
+                $fullPath = Resolve-Path $_
+                Write-Verbose ('Trying to get file properties from "{0}"' -f $fullPath)
+                $wsh.CreateShortcut($fullPath.Path)
+            })
     }
 
-    End{}
+    End {}
 }
 
 Export-ModuleMember -Function *-TargetResource
