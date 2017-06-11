@@ -45,6 +45,10 @@ function Get-TargetResource {
         [System.String]
         $Icon,
 
+        [parameter()]
+        [System.String[]]
+        $HotKey,
+
         [ValidateSet("normal", "maximized", "minimized")]
         [System.String]
         $WindowStyle = [WindowStyle]::normal
@@ -73,6 +77,7 @@ function Get-TargetResource {
         Arguments        = $shortcut.Arguments
         Description      = $shortcut.Description
         Icon             = $shortcut.IconLocation
+        HotKey           = $shortcut.Hotkey
         WindowStyle      = [WindowStyle]::undefined
     }
 
@@ -115,6 +120,10 @@ function Set-TargetResource {
         [parameter()]
         [System.String]
         $Icon,
+
+        [parameter()]
+        [System.String[]]
+        $HotKey,
 
         [ValidateSet("normal", "maximized", "minimized")]
         [System.String]
@@ -174,6 +183,10 @@ function Test-TargetResource {
         [System.String]
         $Icon = ',0',
 
+        [parameter()]
+        [System.String[]]
+        $HotKey,
+
         [ValidateSet("normal", "maximized", "minimized")]
         [System.String]
         $WindowStyle = [WindowStyle]::normal
@@ -195,8 +208,12 @@ function Test-TargetResource {
         $Path = $Path + '.lnk'
     }
 
-    $ReturnValue = $false
+    # HotKey文字列組み立て
+    if($HotKey){
+        $HotKeyStr = Format-HotKeyString $HotKey
+    }
 
+    $ReturnValue = $false
     switch ($Ensure) {
         'Absent' {
             # ファイルがなければ$true あれば$false
@@ -213,6 +230,7 @@ function Test-TargetResource {
                   -and ($Info.Arguments -eq $Arguments)`
                    -and ($Info.Description -eq $Description)`
                    -and ($Info.Icon -eq $Icon)`
+                   -and ($Info.HotKey -eq $HotKeyStr)`
                     -and ($Info.WindowStyle -eq $WindowStyle)
             }
         }
@@ -264,6 +282,10 @@ function New-Shortcut {
             ValueFromPipelineByPropertyName)]
         [string]$Icon,
 
+        [parameter(ValueFromPipelineByPropertyName)]
+        [System.String[]]
+        $HotKey,
+
         # Set WindowStyle for shortcut.
         [parameter(
             ValueFromPipelineByPropertyName)]
@@ -283,6 +305,10 @@ function New-Shortcut {
         # set Path for Shortcut
         if (-not $Path.EndsWith('.lnk')) {
             $Path = $Path + $extension
+        }
+
+        if($HotKey){
+            $HotKeyStr = Format-HotKeyString $HotKey
         }
 
         if (-not (Test-Path (Split-Path $Path -Parent))) {
@@ -311,6 +337,9 @@ function New-Shortcut {
             $shortCut.WorkingDirectory = $WorkingDirectory
             if($PSBoundParameters.ContainsKey('Icon')){
                 $shortCut.IconLocation = $Icon
+            }
+            if($HotKeyStr){
+                $shortCut.Hotkey = $HotKeyStr
             }
             $shortCut.Save()
             Write-Verbose ('Shortcut file created successfully')
@@ -353,6 +382,38 @@ function Get-Shortcut {
     }
 
     End {}
+}
+
+function Format-HotKeyString{
+    [CmdletBinding()]
+    [OutputType([String])]
+    Param(
+        [Parameter(Mandatory,Position=0)]
+        [string[]]$HotKeyArray
+    )
+
+    $HotKeyArray = $HotKey.split('+').Trim()
+    if($HotKeyArray.Count -notin (2..4)){
+        #最短で修飾+キーの2要素、最長でAlt+Ctrl+Shift+キーの4要素
+        Write-Error ('HotKey is not valid format.')
+    }
+    elseif($HotKeyArray[0] -notmatch '^(Ctrl|Alt|Shift)$'){
+        #修飾キーから始まっていないとダメ
+        Write-Error ('HotKey is not valid format.')
+    }
+    else{
+        #優先順位付きソート
+        $sort = $HotKeyArray | % {
+            switch ($_) {
+                'Alt'   {1}
+                'Ctrl'  {2}
+                'Shift' {3}
+                Default {4}
+            }
+        }
+        [Array]::Sort($sort, $HotKeyArray)
+        $HotKeyArray -join '+'
+    }
 }
 
 Export-ModuleMember -Function *-TargetResource
