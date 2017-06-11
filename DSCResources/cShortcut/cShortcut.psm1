@@ -3,6 +3,14 @@
     Present
 }
 
+Enum WindowStyle
+{
+    undefined = 0
+    normal    = 1
+    maximized = 3
+    minimized = 7
+}
+
 function Get-TargetResource {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
@@ -11,7 +19,7 @@ function Get-TargetResource {
         [parameter()]
         [ValidateSet("Present", "Absent")]
         [System.String]
-        $Ensure = 'Present',
+        $Ensure = [Ensure]::Present,
 
         [parameter(Mandatory = $true)]
         [System.String]
@@ -31,7 +39,7 @@ function Get-TargetResource {
 
         [ValidateSet("normal", "maximized", "minimized")]
         [System.String]
-        $WindowStyle = "normal"
+        $WindowStyle = [WindowStyle]::normal
     )
 
     if (-not $Path.EndsWith('.lnk')) {
@@ -55,7 +63,11 @@ function Get-TargetResource {
         Target           = $shortcut.TargetPath
         WorkingDirectory = $shortcut.WorkingDirectory
         Arguments        = $shortcut.Arguments
-        WindowStyle      = $shortcut.WindowStyle
+        WindowStyle      = [WindowStyle]::undefined
+    }
+
+    if($shortcut.WindowStyle -as [WindowStyle]){
+        $returnValue.WindowStyle = [WindowStyle]$shortcut.WindowStyle
     }
 
     $returnValue
@@ -68,7 +80,7 @@ function Set-TargetResource {
         [parameter()]
         [ValidateSet("Present", "Absent")]
         [System.String]
-        $Ensure = 'Present',
+        $Ensure = [Ensure]::Present,
 
         [parameter(Mandatory = $true)]
         [System.String]
@@ -88,7 +100,7 @@ function Set-TargetResource {
 
         [ValidateSet("normal", "maximized", "minimized")]
         [System.String]
-        $WindowStyle = "normal"
+        $WindowStyle = [WindowStyle]::normal
     )
 
     if (-not $Path.EndsWith('.lnk')) {
@@ -118,7 +130,7 @@ function Test-TargetResource {
         [parameter()]
         [ValidateSet("Present", "Absent")]
         [System.String]
-        $Ensure = 'Present',
+        $Ensure = [Ensure]::Present,
 
         [parameter(Mandatory = $true)]
         [System.String]
@@ -138,7 +150,7 @@ function Test-TargetResource {
 
         [ValidateSet("normal", "maximized", "minimized")]
         [System.String]
-        $WindowStyle = "normal"
+        $WindowStyle = [WindowStyle]::normal
     )
 
     <#  想定される状態パターンと返却するべき値
@@ -157,14 +169,7 @@ function Test-TargetResource {
         $Path = $Path + '.lnk'
     }
 
-    # WindowStyleをnumberに
-    switch ($WindowStyle) {
-        'normal' { $NumofWindowStyle = 1 }
-        'maximized' { $NumofWindowStyle = 3 }
-        'minimized' { $NumofWindowStyle = 7 }
-    }
-
-    $ReturnValue = $true
+    $ReturnValue = $false
 
     switch ($Ensure) {
         'Absent' {
@@ -177,7 +182,7 @@ function Test-TargetResource {
                 $ReturnValue = $false
             }
             else {
-                $ReturnValue = ($Info.Target -eq $Target) -and ($Info.WorkingDirectory -eq $WorkingDirectory) -and ($Info.Arguments -eq $Arguments) -and ($Info.WindowStyle -eq $NumofWindowStyle)
+                $ReturnValue = ($Info.Target -eq $Target) -and ($Info.WorkingDirectory -eq $WorkingDirectory) -and ($Info.Arguments -eq $Arguments) -and ($Info.WindowStyle -eq $WindowStyle)
             }
         }
     }
@@ -227,7 +232,7 @@ function New-Shortcut {
         [parameter(
             ValueFromPipelineByPropertyName)]
         [ValidateSet('normal', 'maximized', 'minimized')]
-        [string]$WindowStyle = 'normal',
+        [string]$WindowStyle = [WindowStyle]::normal,
 
         # set if you want to show create shortcut result
         [switch]$PassThru
@@ -253,13 +258,6 @@ function New-Shortcut {
         $Directory = Resolve-Path (Split-Path $Path -Parent) # Directory of shortcut
         $Path = Join-Path $Directory $fileName  # Fullpath of shortcut
 
-        # set WindowStyle
-        switch ($WindowStyle) {
-            'normal' { $NumofWindowStyle = 1 }
-            'maximized' { $NumofWindowStyle = 3 }
-            'minimized' { $NumofWindowStyle = 7 }
-        }
-
         #Remove existing shortcut
         if (Test-Path $path) {
             Write-Verbose ("Remove existing shortcut file")
@@ -272,7 +270,7 @@ function New-Shortcut {
             $shortCut = $wsh.CreateShortCut($path)
             $shortCut.TargetPath = $TargetPath
             $shortCut.Description = $Description
-            $shortCut.WindowStyle = $NumofWindowStyle
+            $shortCut.WindowStyle = [int][WindowStyle]$WindowStyle
             $shortCut.Arguments = $Arguments
             $shortCut.WorkingDirectory = $WorkingDirectory
             $shortCut.Save()
