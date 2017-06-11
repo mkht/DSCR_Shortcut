@@ -1,7 +1,7 @@
 ﻿#
 # モジュール 'DSCR_Shortcut' のモジュール マニフェスト
 #
-# 生成者: makihata
+# 生成者: mkht
 #
 # 生成日: 2016/06/18
 #
@@ -18,16 +18,16 @@ ModuleVersion = '1.1.0'
 GUID = 'dc24c0c9-ad6b-4fce-9ce4-2410f9ce4f7f'
 
 # このモジュールの作成者
-Author = 'maki'
+Author = 'mkht'
 
 # このモジュールの会社またはベンダー
-CompanyName = 'HarmonyPlus'
+CompanyName = ''
 
 # このモジュールの著作権情報
-Copyright = '(c) 2017 maki. All rights reserved.'
+Copyright = '(c) 2017 mkht. All rights reserved.'
 
 # このモジュールの機能の説明
-# Description = ''
+Description = 'PowerShell DSC Resource to create shortcut file.'
 
 # このモジュールに必要な Windows PowerShell エンジンの最小バージョン
 PowerShellVersion = '5.0'
@@ -51,10 +51,34 @@ VariablesToExport = '*'
 AliasesToExport = @()
 
 # このモジュールからエクスポートする DSC リソース
-# DscResourcesToExport = @()
+DscResourcesToExport = @('cShortcut')
 
 # このモジュールからエクスポートされたコマンドの既定のプレフィックス。既定のプレフィックスをオーバーライドする場合は、Import-Module -Prefix を使用します。
 # DefaultCommandPrefix = ''
+
+# RootModule/ModuleToProcess に指定されているモジュールに渡すプライベート データ。これには、PowerShell で使用される追加のモジュール メタデータを含む PSData ハッシュテーブルが含まれる場合もあります。
+PrivateData = @{
+
+    PSData = @{
+
+        # このモジュールに適用されているタグ。オンライン ギャラリーでモジュールを検出する際に役立ちます。
+        Tags = ('DesiredStateConfiguration','DSC','DSCResource', 'Shortcut')
+
+        # A URL to the license for this module.
+        LicenseUri = 'https://github.com/mkht/DSCR_Shortcut/blob/master/LICENSE'
+
+        # このプロジェクトのメイン Web サイトの URL。
+        ProjectUri = 'https://github.com/mkht/DSCR_Shortcut'
+
+        # このモジュールを表すアイコンの URL。
+        # IconUri = ''
+
+        # このモジュールの ReleaseNotes
+        # ReleaseNotes = ''
+
+    } # PSData ハッシュテーブル終了
+
+} # PrivateData ハッシュテーブル終了
 
 }
 
