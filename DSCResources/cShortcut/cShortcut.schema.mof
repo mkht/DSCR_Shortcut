@@ -7,6 +7,7 @@ class cShortcut : OMI_BaseResource
     [Key] String Path;
     [Write] String Arguments;
     [Write] String WorkingDirectory;
+    [Write] String Description;
     [Write, ValueMap{"normal","maximized","minimized"}, Values{"normal","maximized","minimized"}] String WindowStyle;
 };
 

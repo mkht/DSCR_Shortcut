@@ -37,6 +37,10 @@ function Get-TargetResource {
         [System.String]
         $Arguments,
 
+        [parameter()]
+        [System.String]
+        $Description,
+
         [ValidateSet("normal", "maximized", "minimized")]
         [System.String]
         $WindowStyle = [WindowStyle]::normal
@@ -63,6 +67,7 @@ function Get-TargetResource {
         Target           = $shortcut.TargetPath
         WorkingDirectory = $shortcut.WorkingDirectory
         Arguments        = $shortcut.Arguments
+        Description        = $shortcut.Description
         WindowStyle      = [WindowStyle]::undefined
     }
 
@@ -97,6 +102,10 @@ function Set-TargetResource {
         [parameter()]
         [System.String]
         $Arguments,
+
+        [parameter()]
+        [System.String]
+        $Description,
 
         [ValidateSet("normal", "maximized", "minimized")]
         [System.String]
@@ -148,6 +157,10 @@ function Test-TargetResource {
         [System.String]
         $Arguments,
 
+        [parameter()]
+        [System.String]
+        $Description,
+
         [ValidateSet("normal", "maximized", "minimized")]
         [System.String]
         $WindowStyle = [WindowStyle]::normal
@@ -182,7 +195,11 @@ function Test-TargetResource {
                 $ReturnValue = $false
             }
             else {
-                $ReturnValue = ($Info.Target -eq $Target) -and ($Info.WorkingDirectory -eq $WorkingDirectory) -and ($Info.Arguments -eq $Arguments) -and ($Info.WindowStyle -eq $WindowStyle)
+                $ReturnValue = ($Info.Target -eq $Target)`
+                 -and ($Info.WorkingDirectory -eq $WorkingDirectory)`
+                  -and ($Info.Arguments -eq $Arguments)`
+                   -and ($Info.Description -eq $Description)`
+                    -and ($Info.WindowStyle -eq $WindowStyle)
             }
         }
     }
