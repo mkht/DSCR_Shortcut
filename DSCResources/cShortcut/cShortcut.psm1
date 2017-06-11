@@ -3,8 +3,7 @@
     Present
 }
 
-Enum WindowStyle
-{
+Enum WindowStyle {
     undefined = 0
     normal    = 1
     maximized = 3
@@ -13,44 +12,44 @@ Enum WindowStyle
 
 function Get-TargetResource {
     [CmdletBinding()]
-    [OutputType([System.Collections.Hashtable])]
+    [OutputType([Hashtable])]
     param
     (
         [parameter()]
         [ValidateSet("Present", "Absent")]
-        [System.String]
+        [String]
         $Ensure = [Ensure]::Present,
 
-        [parameter(Mandatory = $true)]
-        [System.String]
+        [parameter(Mandatory)]
+        [String]
         $Path,
 
-        [parameter(Mandatory = $true)]
-        [System.String]
+        [parameter(Mandatory)]
+        [String]
         $Target,
 
         [parameter()]
-        [System.String]
+        [String]
         $WorkingDirectory,
 
         [parameter()]
-        [System.String]
+        [String]
         $Arguments,
 
         [parameter()]
-        [System.String]
+        [String]
         $Description,
 
         [parameter()]
-        [System.String]
+        [String]
         $Icon,
 
         [parameter()]
-        [System.String[]]
+        [String[]]
         $HotKey,
 
         [ValidateSet("normal", "maximized", "minimized")]
-        [System.String]
+        [String]
         $WindowStyle = [WindowStyle]::normal
     )
 
@@ -81,7 +80,7 @@ function Get-TargetResource {
         WindowStyle      = [WindowStyle]::undefined
     }
 
-    if($shortcut.WindowStyle -as [WindowStyle]){
+    if ($shortcut.WindowStyle -as [WindowStyle]) {
         $returnValue.WindowStyle = [WindowStyle]$shortcut.WindowStyle
     }
 
@@ -94,39 +93,39 @@ function Set-TargetResource {
     (
         [parameter()]
         [ValidateSet("Present", "Absent")]
-        [System.String]
+        [String]
         $Ensure = [Ensure]::Present,
 
-        [parameter(Mandatory = $true)]
-        [System.String]
+        [parameter(Mandatory)]
+        [String]
         $Path,
 
-        [parameter(Mandatory = $true)]
-        [System.String]
+        [parameter(Mandatory)]
+        [String]
         $Target,
 
         [parameter()]
-        [System.String]
+        [String]
         $WorkingDirectory,
 
         [parameter()]
-        [System.String]
+        [String]
         $Arguments,
 
         [parameter()]
-        [System.String]
+        [String]
         $Description,
 
         [parameter()]
-        [System.String]
+        [String]
         $Icon,
 
         [parameter()]
-        [System.String[]]
+        [String[]]
         $HotKey,
 
         [ValidateSet("normal", "maximized", "minimized")]
-        [System.String]
+        [String]
         $WindowStyle = [WindowStyle]::normal
     )
 
@@ -151,44 +150,44 @@ function Set-TargetResource {
 
 function Test-TargetResource {
     [CmdletBinding()]
-    [OutputType([System.Boolean])]
+    [OutputType([bool])]
     param
     (
         [parameter()]
         [ValidateSet("Present", "Absent")]
-        [System.String]
+        [String]
         $Ensure = [Ensure]::Present,
 
-        [parameter(Mandatory = $true)]
-        [System.String]
+        [parameter(Mandatory)]
+        [String]
         $Path,
 
-        [parameter(Mandatory = $true)]
-        [System.String]
+        [parameter(Mandatory)]
+        [String]
         $Target,
 
         [parameter()]
-        [System.String]
+        [String]
         $WorkingDirectory,
 
         [parameter()]
-        [System.String]
+        [String]
         $Arguments,
 
         [parameter()]
-        [System.String]
+        [String]
         $Description,
 
         [parameter()]
-        [System.String]
+        [String]
         $Icon = ',0',
 
         [parameter()]
-        [System.String[]]
+        [String[]]
         $HotKey,
 
         [ValidateSet("normal", "maximized", "minimized")]
-        [System.String]
+        [String]
         $WindowStyle = [WindowStyle]::normal
     )
 
@@ -209,7 +208,7 @@ function Test-TargetResource {
     }
 
     # HotKey文字列組み立て
-    if($HotKey){
+    if ($HotKey) {
         $HotKeyStr = Format-HotKeyString $HotKey
     }
 
@@ -226,11 +225,11 @@ function Test-TargetResource {
             }
             else {
                 $ReturnValue = ($Info.Target -eq $Target)`
-                 -and ($Info.WorkingDirectory -eq $WorkingDirectory)`
-                  -and ($Info.Arguments -eq $Arguments)`
-                   -and ($Info.Description -eq $Description)`
-                   -and ($Info.Icon -eq $Icon)`
-                   -and ($Info.HotKey -eq $HotKeyStr)`
+                    -and ($Info.WorkingDirectory -eq $WorkingDirectory)`
+                    -and ($Info.Arguments -eq $Arguments)`
+                    -and ($Info.Description -eq $Description)`
+                    -and ($Info.Icon -eq $Icon)`
+                    -and ($Info.HotKey -eq $HotKeyStr)`
                     -and ($Info.WindowStyle -eq $WindowStyle)
             }
         }
@@ -261,34 +260,29 @@ function New-Shortcut {
         [string]$Path,
 
         # Set Description for shortcut.
-        [parameter(
-            ValueFromPipelineByPropertyName)]
+        [parameter(ValueFromPipelineByPropertyName)]
         [Alias('Comment')]
         [string]$Description,
 
         # Set Arguments for shortcut.
-        [parameter(
-            ValueFromPipelineByPropertyName)]
+        [parameter(ValueFromPipelineByPropertyName)]
         [string]$Arguments,
 
         # Set WorkingDirectory for shortcut.
-        [parameter(
-            ValueFromPipelineByPropertyName)]
+        [parameter(ValueFromPipelineByPropertyName)]
         # [validateScript({Test-Path $_})]
         [string]$WorkingDirectory,
 
         # Set IconLocation for shortcut.
-        [parameter(
-            ValueFromPipelineByPropertyName)]
+        [parameter(ValueFromPipelineByPropertyName)]
         [string]$Icon,
 
         [parameter(ValueFromPipelineByPropertyName)]
-        [System.String[]]
+        [String[]]
         $HotKey,
 
         # Set WindowStyle for shortcut.
-        [parameter(
-            ValueFromPipelineByPropertyName)]
+        [parameter(ValueFromPipelineByPropertyName)]
         [ValidateSet('normal', 'maximized', 'minimized')]
         [string]$WindowStyle = [WindowStyle]::normal,
 
@@ -307,7 +301,7 @@ function New-Shortcut {
             $Path = $Path + $extension
         }
 
-        if($HotKey){
+        if ($HotKey) {
             $HotKeyStr = Format-HotKeyString $HotKey
         }
 
@@ -335,10 +329,10 @@ function New-Shortcut {
             $shortCut.WindowStyle = [int][WindowStyle]$WindowStyle
             $shortCut.Arguments = $Arguments
             $shortCut.WorkingDirectory = $WorkingDirectory
-            if($PSBoundParameters.ContainsKey('Icon')){
+            if ($PSBoundParameters.ContainsKey('Icon')) {
                 $shortCut.IconLocation = $Icon
             }
-            if($HotKeyStr){
+            if ($HotKeyStr) {
                 $shortCut.Hotkey = $HotKeyStr
             }
             $shortCut.Save()
@@ -384,24 +378,24 @@ function Get-Shortcut {
     End {}
 }
 
-function Format-HotKeyString{
+function Format-HotKeyString {
     [CmdletBinding()]
     [OutputType([String])]
     Param(
-        [Parameter(Mandatory,Position=0)]
+        [Parameter(Mandatory, Position = 0)]
         [string[]]$HotKeyArray
     )
 
     $HotKeyArray = $HotKey.split('+').Trim()
-    if($HotKeyArray.Count -notin (2..4)){
+    if ($HotKeyArray.Count -notin (2..4)) {
         #最短で修飾+キーの2要素、最長でAlt+Ctrl+Shift+キーの4要素
         Write-Error ('HotKey is not valid format.')
     }
-    elseif($HotKeyArray[0] -notmatch '^(Ctrl|Alt|Shift)$'){
+    elseif ($HotKeyArray[0] -notmatch '^(Ctrl|Alt|Shift)$') {
         #修飾キーから始まっていないとダメ
         Write-Error ('HotKey is not valid format.')
     }
-    else{
+    else {
         #優先順位付きソート
         $sort = $HotKeyArray | % {
             switch ($_) {
