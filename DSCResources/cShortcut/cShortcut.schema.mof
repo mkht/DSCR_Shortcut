@@ -9,7 +9,7 @@ class cShortcut : OMI_BaseResource
     [Write] String WorkingDirectory;
     [Write] String Description;
     [Write] String Icon;
-    [Write] String HotKey[];
+    [Write] String HotKey;
     [Write, ValueMap{"normal","maximized","minimized"}, Values{"normal","maximized","minimized"}] String WindowStyle;
 };
 

@@ -42,7 +42,7 @@ PowerShell DSC Resource to create shortcut file.
 + [string] **Icon** (Write):
     + The path of the icon resource.
 
-+ [string[]] **HotKey** (Write):
++ [string] **HotKey** (Write):
     + HotKey (Shortcut Key) of the shortcut
     + HotKey works only for shortcuts on the desktop or in the Start menu.
     + The syntax is: `"{KeyModifier} + {KeyName}"` ( e.g. `"Alt+Ctrl+Q"`, `"Shift+F9"` )
@@ -83,6 +83,9 @@ Configuration Example2
 ```
 
 ## ChangeLog
+### v1.3.1
+Change type of `HotKey` to `[string]`
+
 ### v1.3.0
 + Add `Description` property #1
 + Add `HotKey` property #2

@@ -45,7 +45,7 @@ function Get-TargetResource {
         $Icon,
 
         [parameter()]
-        [String[]]
+        [String]
         $HotKey,
 
         [ValidateSet("normal", "maximized", "minimized")]
@@ -121,7 +121,7 @@ function Set-TargetResource {
         $Icon,
 
         [parameter()]
-        [String[]]
+        [String]
         $HotKey,
 
         [ValidateSet("normal", "maximized", "minimized")]
@@ -183,7 +183,7 @@ function Test-TargetResource {
         $Icon = ',0',
 
         [parameter()]
-        [String[]]
+        [String]
         $HotKey,
 
         [ValidateSet("normal", "maximized", "minimized")]
@@ -278,7 +278,7 @@ function New-Shortcut {
         [string]$Icon,
 
         [parameter(ValueFromPipelineByPropertyName)]
-        [String[]]
+        [String]
         $HotKey,
 
         # Set WindowStyle for shortcut.
