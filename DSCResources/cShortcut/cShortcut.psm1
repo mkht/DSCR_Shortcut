@@ -5,7 +5,7 @@
 
 Enum WindowStyle {
     undefined = 0
-    normal    = 1
+    normal = 1
     maximized = 3
     minimized = 7
 }
@@ -54,7 +54,7 @@ function Get-TargetResource {
     )
 
     if (-not $Path.EndsWith('.lnk')) {
-        Write-Verbose ("File extentison is not 'lnk'. Automatically add extension")
+        Write-Verbose ("File extension is not 'lnk'. Automatically add extension")
         $Path = $Path + '.lnk'
     }
 
@@ -130,7 +130,7 @@ function Set-TargetResource {
     )
 
     if (-not $Path.EndsWith('.lnk')) {
-        Write-Verbose ("File extentison is not 'lnk'. Automatically add extension")
+        Write-Verbose ("File extension is not 'lnk'. Automatically add extension")
         $Path = $Path + '.lnk'
     }
 
@@ -203,7 +203,7 @@ function Test-TargetResource {
 
     # 拡張子つける
     if (-not $Path.EndsWith('.lnk')) {
-        Write-Verbose ("File extentison is not 'lnk'. Automatically add extension")
+        Write-Verbose ("File extension is not 'lnk'. Automatically add extension")
         $Path = $Path + '.lnk'
     }
 
@@ -399,8 +399,8 @@ function Format-HotKeyString {
         #優先順位付きソート
         $sort = $HotKeyArray | % {
             switch ($_) {
-                'Alt'   {1}
-                'Ctrl'  {2}
+                'Alt' {1}
+                'Ctrl' {2}
                 'Shift' {3}
                 Default {4}
             }
