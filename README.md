@@ -83,8 +83,12 @@ Configuration Example2
 ```
 
 ## ChangeLog
+### v1.3.4
++ Fixed issue that the Test-TargetResource always fails when the HotKey is not specified. #8
++ Improved verbose messages.
+
 ### v1.3.1
-Change type of `HotKey` to `[string]`
++ Change type of `HotKey` to `[string]`
 
 ### v1.3.0
 + Add `Description` property #1
