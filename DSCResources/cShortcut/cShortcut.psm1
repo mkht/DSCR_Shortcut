@@ -1,4 +1,4 @@
-﻿Enum Ensure{
+Enum Ensure{
     Absent
     Present
 }
@@ -210,6 +210,9 @@ function Test-TargetResource {
     # HotKey文字列組み立て
     if ($HotKey) {
         $HotKeyStr = Format-HotKeyString $HotKey
+    }
+    else {
+        $HotKeyStr = [string]::Empty
     }
 
     $ReturnValue = $false
