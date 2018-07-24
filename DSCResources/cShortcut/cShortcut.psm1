@@ -1,4 +1,4 @@
-Enum Ensure{
+﻿Enum Ensure{
     Absent
     Present
 }
@@ -227,13 +227,21 @@ function Test-TargetResource {
                 $ReturnValue = $false
             }
             else {
-                $ReturnValue = ($Info.Target -eq $Target)`
-                    -and ($Info.WorkingDirectory -eq $WorkingDirectory)`
-                    -and ($Info.Arguments -eq $Arguments)`
-                    -and ($Info.Description -eq $Description)`
-                    -and ($Info.Icon -eq $Icon)`
-                    -and ($Info.HotKey -eq $HotKeyStr)`
-                    -and ($Info.WindowStyle -eq $WindowStyle)
+                $NotMatched = @()
+                if ($Info.Target -ne $Target) {$NotMatched += 'Target'}
+                if ($Info.WorkingDirectory -ne $WorkingDirectory) {$NotMatched += 'WorkingDirectory'}
+                if ($Info.Arguments -ne $Arguments) {$NotMatched += 'Arguments'}
+                if ($Info.Description -ne $Description) {$NotMatched += 'Description'}
+                if ($Info.Icon -ne $Icon) {$NotMatched += 'Icon'}
+                if ($Info.HotKey -ne $HotKey) {$NotMatched += 'HotKey'}
+                if ($Info.WindowStyle -ne $WindowStyle) {$NotMatched += 'WindowStyle'}
+                
+                $ReturnValue = ($NotMatched.Count -eq 0)
+                if (-not $ReturnValue) {
+                    $NotMatched | ForEach-Object {
+                        Write-Verbose ('{0} property is not matched!' -f $_)
+                    }
+                }
             }
         }
     }
