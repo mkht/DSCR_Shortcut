@@ -1,4 +1,4 @@
-﻿Enum Ensure{
+Enum Ensure{
     Absent
     Present
 }
@@ -228,7 +228,7 @@ function Test-TargetResource {
             }
             else {
                 $NotMatched = @()
-                if ($Info.Target -ne $Target) {$NotMatched += 'Target'}
+                if ($Info.Target -ne [System.Environment]::ExpandEnvironmentVariables($Target)) {$NotMatched += 'Target'}
                 if ($Info.WorkingDirectory -ne $WorkingDirectory) {$NotMatched += 'WorkingDirectory'}
                 if ($Info.Arguments -ne $Arguments) {$NotMatched += 'Arguments'}
                 if ($Info.Description -ne $Description) {$NotMatched += 'Description'}
