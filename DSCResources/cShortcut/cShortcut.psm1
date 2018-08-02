@@ -1,4 +1,4 @@
-Enum Ensure{
+﻿Enum Ensure{
     Absent
     Present
 }
@@ -134,6 +134,10 @@ function Set-TargetResource {
         $Path = $Path + '.lnk'
     }
 
+    if ($Icon -and ($Icon -notmatch ',\d+$')) {
+        $Icon = $Icon + ',0'
+    }
+
     # Ensure = "Absent"
     if ($Ensure -eq [Ensure]::Absent) {
         Write-Verbose ('Remove shortcut file "{0}"' -f $Path)
@@ -205,6 +209,10 @@ function Test-TargetResource {
     if (-not $Path.EndsWith('.lnk')) {
         Write-Verbose ("File extension is not 'lnk'. Automatically add extension")
         $Path = $Path + '.lnk'
+    }
+
+    if ($Icon -and ($Icon -notmatch ',\d+$')) {
+        $Icon = $Icon + ',0'
     }
 
     # HotKey文字列組み立て
