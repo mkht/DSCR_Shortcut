@@ -83,7 +83,7 @@ Configuration Example2
 ```
 
 ## ChangeLog
-### Unreleased
+### v1.3.6
 + Fixed issue that the Test-TargetResource always fails when the Target contains environment variables. #9
 + Fixed issue that the Test-TargetResource may fails when the Icon is specified.
 
