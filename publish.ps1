@@ -1,10 +1,10 @@
-Param(
+Param (
     [Parameter(Mandatory = $true)]
     [string]$NugetApiKey,
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string[]]$ExcludeDir = @('.git'),
+    [string[]]$ExcludeDir = @('.git', '.vscode'),
 
     [switch]$WhatIf
 )
