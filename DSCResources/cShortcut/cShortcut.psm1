@@ -1,7 +1,8 @@
-﻿Enum Ensure{
+﻿Enum Ensure {
     Absent
     Present
 }
+
 
 Enum WindowStyle {
     undefined = 0
@@ -10,46 +11,47 @@ Enum WindowStyle {
     minimized = 7
 }
 
+
 function Get-TargetResource {
     [CmdletBinding()]
     [OutputType([Hashtable])]
     param
     (
-        [parameter()]
+        [Parameter()]
         [ValidateSet("Present", "Absent")]
-        [String]
+        [string]
         $Ensure = [Ensure]::Present,
 
-        [parameter(Mandatory)]
-        [String]
+        [Parameter(Mandatory)]
+        [string]
         $Path,
 
-        [parameter(Mandatory)]
-        [String]
+        [Parameter(Mandatory)]
+        [string]
         $Target,
 
-        [parameter()]
-        [String]
+        [Parameter()]
+        [string]
         $WorkingDirectory,
 
-        [parameter()]
-        [String]
+        [Parameter()]
+        [string]
         $Arguments,
 
-        [parameter()]
-        [String]
+        [Parameter()]
+        [string]
         $Description,
 
-        [parameter()]
-        [String]
+        [Parameter()]
+        [string]
         $Icon,
 
-        [parameter()]
-        [String]
+        [Parameter()]
+        [string]
         $HotKey,
 
         [ValidateSet("normal", "maximized", "minimized")]
-        [String]
+        [string]
         $WindowStyle = [WindowStyle]::normal
     )
 
@@ -87,45 +89,46 @@ function Get-TargetResource {
     $returnValue
 } # end of Get-TargetResource
 
+
 function Set-TargetResource {
     [CmdletBinding()]
     param
     (
-        [parameter()]
+        [Parameter()]
         [ValidateSet("Present", "Absent")]
-        [String]
+        [string]
         $Ensure = [Ensure]::Present,
 
-        [parameter(Mandatory)]
-        [String]
+        [Parameter(Mandatory)]
+        [string]
         $Path,
 
-        [parameter(Mandatory)]
-        [String]
+        [Parameter(Mandatory)]
+        [string]
         $Target,
 
-        [parameter()]
-        [String]
+        [Parameter()]
+        [string]
         $WorkingDirectory,
 
-        [parameter()]
-        [String]
+        [Parameter()]
+        [string]
         $Arguments,
 
-        [parameter()]
-        [String]
+        [Parameter()]
+        [string]
         $Description,
 
-        [parameter()]
-        [String]
+        [Parameter()]
+        [string]
         $Icon,
 
-        [parameter()]
-        [String]
+        [Parameter()]
+        [string]
         $HotKey,
 
         [ValidateSet("normal", "maximized", "minimized")]
-        [String]
+        [string]
         $WindowStyle = [WindowStyle]::normal
     )
 
@@ -152,46 +155,47 @@ function Set-TargetResource {
 
 } # end of Set-TargetResource
 
+
 function Test-TargetResource {
     [CmdletBinding()]
     [OutputType([bool])]
     param
     (
-        [parameter()]
+        [Parameter()]
         [ValidateSet("Present", "Absent")]
-        [String]
+        [string]
         $Ensure = [Ensure]::Present,
 
-        [parameter(Mandatory)]
-        [String]
+        [Parameter(Mandatory)]
+        [string]
         $Path,
 
-        [parameter(Mandatory)]
-        [String]
+        [Parameter(Mandatory)]
+        [string]
         $Target,
 
-        [parameter()]
-        [String]
+        [Parameter()]
+        [string]
         $WorkingDirectory,
 
-        [parameter()]
-        [String]
+        [Parameter()]
+        [string]
         $Arguments,
 
-        [parameter()]
-        [String]
+        [Parameter()]
+        [string]
         $Description,
 
-        [parameter()]
-        [String]
+        [Parameter()]
+        [string]
         $Icon = ',0',
 
-        [parameter()]
-        [String]
+        [Parameter()]
+        [string]
         $HotKey,
 
         [ValidateSet("normal", "maximized", "minimized")]
-        [String]
+        [string]
         $WindowStyle = [WindowStyle]::normal
     )
 
@@ -243,7 +247,7 @@ function Test-TargetResource {
                 if ($Info.Icon -ne $Icon) {$NotMatched += 'Icon'}
                 if ($Info.HotKey -ne $HotKey) {$NotMatched += 'HotKey'}
                 if ($Info.WindowStyle -ne $WindowStyle) {$NotMatched += 'WindowStyle'}
-                
+
                 $ReturnValue = ($NotMatched.Count -eq 0)
                 if (-not $ReturnValue) {
                     $NotMatched | ForEach-Object {
@@ -257,13 +261,14 @@ function Test-TargetResource {
     return $ReturnValue
 } # end of Test-TargetResource
 
+
 function New-Shortcut {
     [CmdletBinding()]
     [OutputType([System.__ComObject])]
     param
     (
         # Set Target full path to create shortcut
-        [parameter(
+        [Parameter(
             Position = 0,
             Mandatory,
             ValueFromPipelineByPropertyName)]
@@ -271,7 +276,7 @@ function New-Shortcut {
         [string]$TargetPath,
 
         # set file path to create shortcut. If the path not ends with '.lnk', extension will be add automatically.
-        [parameter(
+        [Parameter(
             Position = 1,
             Mandatory,
             ValueFromPipelineByPropertyName)]
@@ -279,29 +284,29 @@ function New-Shortcut {
         [string]$Path,
 
         # Set Description for shortcut.
-        [parameter(ValueFromPipelineByPropertyName)]
+        [Parameter(ValueFromPipelineByPropertyName)]
         [Alias('Comment')]
         [string]$Description,
 
         # Set Arguments for shortcut.
-        [parameter(ValueFromPipelineByPropertyName)]
+        [Parameter(ValueFromPipelineByPropertyName)]
         [string]$Arguments,
 
         # Set WorkingDirectory for shortcut.
-        [parameter(ValueFromPipelineByPropertyName)]
+        [Parameter(ValueFromPipelineByPropertyName)]
         # [validateScript({Test-Path $_})]
         [string]$WorkingDirectory,
 
         # Set IconLocation for shortcut.
-        [parameter(ValueFromPipelineByPropertyName)]
+        [Parameter(ValueFromPipelineByPropertyName)]
         [string]$Icon,
 
-        [parameter(ValueFromPipelineByPropertyName)]
-        [String]
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [string]
         $HotKey,
 
         # Set WindowStyle for shortcut.
-        [parameter(ValueFromPipelineByPropertyName)]
+        [Parameter(ValueFromPipelineByPropertyName)]
         [ValidateSet('normal', 'maximized', 'minimized')]
         [string]$WindowStyle = [WindowStyle]::normal,
 
@@ -369,17 +374,18 @@ function New-Shortcut {
     end {}
 }
 
+
 function Get-Shortcut {
     [CmdletBinding()]
     [OutputType([System.__ComObject])]
     param
     (
         # Path of shortcut file
-        [parameter(
+        [Parameter(
             Position = 0,
             Mandatory,
             ValueFromPipeline)]
-        [validateScript( {$_ | % {Test-Path $_}})]
+        [ValidateScript( {$_ | ForEach-Object {Test-Path $_}})]
         [string[]]$Path
     )
     begin {
@@ -397,9 +403,10 @@ function Get-Shortcut {
     End {}
 }
 
+
 function Format-HotKeyString {
     [CmdletBinding()]
-    [OutputType([String])]
+    [OutputType([string])]
     Param(
         [Parameter(Mandatory, Position = 0)]
         [string[]]$HotKeyArray
@@ -416,7 +423,7 @@ function Format-HotKeyString {
     }
     else {
         #優先順位付きソート
-        $sort = $HotKeyArray | % {
+        $sort = $HotKeyArray | ForEach-Object {
             switch ($_) {
                 'Alt' {1}
                 'Ctrl' {2}
@@ -428,5 +435,6 @@ function Format-HotKeyString {
         $HotKeyArray -join '+'
     }
 }
+
 
 Export-ModuleMember -Function *-TargetResource
