@@ -83,6 +83,10 @@ Configuration Example2
 ```
 
 ## ChangeLog
+### v1.3.7
+ + Fix PSSA issues.
+ + Remove unnecessary files in the published data.
+
 ### v1.3.6
 + Fixed issue that the Test-TargetResource always fails when the Target contains environment variables. #9
 + Fixed issue that the Test-TargetResource may fails when the Icon is specified.
