@@ -83,6 +83,9 @@ Configuration Example2
 ```
 
 ## ChangeLog
+### v1.3.8
+ + Changed not to test for properties not explicitly specified.
+
 ### v1.3.7
  + Fix PSSA issues.
  + Remove unnecessary files in the published data.
