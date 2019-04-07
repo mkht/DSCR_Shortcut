@@ -5,7 +5,7 @@ PowerShell DSC Resource to create shortcut file.
 
 ## Install
 You can install Resource through [PowerShell Gallery](https://www.powershellgallery.com/packages/DSCR_Shortcut/).
-```Powershell
+```PowerShell
 Install-Module -Name DSCR_Shortcut
 ```
 
@@ -50,7 +50,7 @@ PowerShell DSC Resource to create shortcut file.
 
 ## Examples
 + **Example 1**: Create a shortcut to the Internet Explore InPrivate mode to the Administrator's desktop
-```Powershell
+```PowerShell
 Configuration Example1
 {
     Import-DscResource -ModuleName DSCR_Shortcut
@@ -64,7 +64,7 @@ Configuration Example1
 ```
 
 + **Example 2**: WindowStyle, WorkingDirectory, Description, Icon, Hotkey
-```Powershell
+```PowerShell
 Configuration Example2
 {
     Import-DscResource -ModuleName DSCR_Shortcut
