@@ -239,14 +239,35 @@ function Test-TargetResource {
                 $ReturnValue = $false
             }
             else {
+                # Tests whether the shortcut property is the same as the specified parameter.
                 $NotMatched = @()
-                if ($Info.Target -ne [System.Environment]::ExpandEnvironmentVariables($Target)) {$NotMatched += 'Target'}
-                if ($Info.WorkingDirectory -ne $WorkingDirectory) {$NotMatched += 'WorkingDirectory'}
-                if ($Info.Arguments -ne $Arguments) {$NotMatched += 'Arguments'}
-                if ($Info.Description -ne $Description) {$NotMatched += 'Description'}
-                if ($Info.Icon -ne $Icon) {$NotMatched += 'Icon'}
-                if ($Info.HotKey -ne $HotKey) {$NotMatched += 'HotKey'}
-                if ($Info.WindowStyle -ne $WindowStyle) {$NotMatched += 'WindowStyle'}
+                if ($Info.Target -ne [System.Environment]::ExpandEnvironmentVariables($Target)) {
+                    $NotMatched += 'Target'
+                }
+
+                if ($PSBoundParameters.ContainsKey('WorkingDirectory') -and ($Info.WorkingDirectory -ne $WorkingDirectory)) {
+                    $NotMatched += 'WorkingDirectory'
+                }
+
+                if ($PSBoundParameters.ContainsKey('Arguments') -and ($Info.Arguments -ne $Arguments)) {
+                    $NotMatched += 'Arguments'
+                }
+
+                if ($PSBoundParameters.ContainsKey('Description') -and ($Info.Description -ne $Description)) {
+                    $NotMatched += 'Description'
+                }
+
+                if ($PSBoundParameters.ContainsKey('Icon') -and ($Info.Icon -ne $Icon)) {
+                    $NotMatched += 'Icon'
+                }
+
+                if ($PSBoundParameters.ContainsKey('HotKey') -and ($Info.HotKey -ne $HotKey)) {
+                    $NotMatched += 'HotKey'
+                }
+
+                if ($Info.WindowStyle -ne $WindowStyle) {
+                    $NotMatched += 'WindowStyle'
+                }
 
                 $ReturnValue = ($NotMatched.Count -eq 0)
                 if (-not $ReturnValue) {
