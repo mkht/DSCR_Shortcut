@@ -1,8 +1,13 @@
-﻿Enum Ensure {
+# Import ShellLink class
+$ShellLinkPath = Join-Path $PSScriptRoot '..\..\Libs\ShellLink\ShellLink.cs'
+if (Test-Path -LiteralPath $ShellLinkPath -PathType Leaf) {
+    Add-Type -TypeDefinition (Get-Content -LiteralPath $ShellLinkPath -Raw -Encoding UTF8) -Language 'CSharp' -ErrorAction Stop
+}
+
+Enum Ensure {
     Absent
     Present
 }
-
 
 Enum WindowStyle {
     undefined = 0
@@ -10,7 +15,6 @@ Enum WindowStyle {
     maximized = 3
     minimized = 7
 }
-
 
 function Get-TargetResource {
     [CmdletBinding()]
@@ -398,30 +402,43 @@ function New-Shortcut {
 
 function Get-Shortcut {
     [CmdletBinding()]
-    [OutputType([System.__ComObject])]
+    [OutputType([ShellLink])]
     param
     (
-        # Path of shortcut file
-        [Parameter(
-            Position = 0,
-            Mandatory,
-            ValueFromPipeline)]
-        [ValidateScript( {$_ | ForEach-Object {Test-Path $_}})]
-        [string[]]$Path
+        # Path of shortcut files
+        [Parameter(Position = 0, Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        [Alias('FullName')]
+        [ValidateScript( { $_ | ForEach-Object { Test-Path -LiteralPath $_ } })]
+        [string]$Path,
+
+        [switch]$ReadOnly
     )
-    begin {
-        $wsh = New-Object -ComObject Wscript.Shell
+
+    Begin {
+        if ($ReadOnly) {
+            [int]$flag = 0x00000000 #STGM_READ
+        }
+        else {
+            [int]$flag = 0x00000002 #STGM_READWRITE
+        }
     }
 
     Process {
-        $Path.ForEach( {
-                $fullPath = Resolve-Path $_
-                Write-Verbose ('Trying to get file properties from "{0}"' -f $fullPath)
-                $wsh.CreateShortcut($fullPath.Path)
-            })
-    }
+        try {
+            $Shortcut = New-Object -TypeName ShellLink
+            $Shortcut.Load($Path, $flag)
+            return $Shortcut
+        }
+        catch {
+            if ($Shortcut -is [IDisposable]) {
+                $Shortcut.Dispose()
+                $Shortcut = $null
+            }
 
-    End {}
+            Write-Error -Exception $_.Exception
+            return $null
+        }
+    }
 }
 
 
