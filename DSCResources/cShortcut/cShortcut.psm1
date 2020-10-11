@@ -1,4 +1,4 @@
-# Import ShellLink class
+﻿# Import ShellLink class
 $ShellLinkPath = Join-Path $PSScriptRoot '..\..\Libs\ShellLink\ShellLink.cs'
 if (Test-Path -LiteralPath $ShellLinkPath -PathType Leaf) {
     Add-Type -TypeDefinition (Get-Content -LiteralPath $ShellLinkPath -Raw -Encoding UTF8) -Language 'CSharp' -ErrorAction Stop
@@ -67,12 +67,12 @@ function Get-TargetResource {
     $Ensure = [Ensure]::Present
 
     # check file exists
-    if (-not (Test-Path $Path)) {
+    if (-not (Test-Path -LiteralPath $Path)) {
         Write-Verbose 'File not found.'
         $Ensure = [Ensure]::Absent
     }
     else {
-        $shortcut = Get-Shortcut $Path -ErrorAction Continue
+        $shortcut = Get-Shortcut -Path $Path -ErrorAction Continue
     }
     $returnValue = @{
         Ensure           = $Ensure
@@ -148,7 +148,7 @@ function Set-TargetResource {
     # Ensure = "Absent"
     if ($Ensure -eq [Ensure]::Absent) {
         Write-Verbose ('Remove shortcut file "{0}"' -f $Path)
-        Remove-Item $Path -Force
+        Remove-Item -LiteralPath $Path -Force
     }
     else {
         # Ensure = "Present"
@@ -235,7 +235,7 @@ function Test-TargetResource {
     switch ($Ensure) {
         'Absent' {
             # ファイルがなければ$true あれば$false
-            $ReturnValue = (-not (Test-Path $Path -PathType Leaf))
+            $ReturnValue = (-not (Test-Path -LiteralPath $Path -PathType Leaf))
         }
         'Present' {
             $Info = Get-TargetResource -Ensure $Ensure -Path $Path -Target $Target
@@ -354,17 +354,17 @@ function New-Shortcut {
             $HotKeyStr = Format-HotKeyString $HotKey
         }
 
-        if (-not (Test-Path (Split-Path $Path -Parent))) {
+        if (-not (Test-Path -LiteralPath (Split-Path $Path -Parent))) {
             Write-Verbose ("Create parent folder")
             New-Item -Path (Split-Path $Path -Parent) -ItemType Directory -Force -ErrorAction Stop
         }
 
         $fileName = Split-Path $Path -Leaf  # Filename of shortcut
-        $Directory = Resolve-Path (Split-Path $Path -Parent) # Directory of shortcut
+        $Directory = Resolve-Path -Path (Split-Path $Path -Parent) # Directory of shortcut
         $Path = Join-Path $Directory $fileName  # Fullpath of shortcut
 
         #Remove existing shortcut
-        if (Test-Path $path) {
+        if (Test-Path -LiteralPath $path) {
             Write-Verbose ("Remove existing shortcut file")
             Remove-Item $path -Force -ErrorAction SilentlyContinue
         }
@@ -463,10 +463,10 @@ function Format-HotKeyString {
         #優先順位付きソート
         $sort = $HotKeyArray | ForEach-Object {
             switch ($_) {
-                'Alt' {1}
-                'Ctrl' {2}
-                'Shift' {3}
-                Default {4}
+                'Alt' { 1 }
+                'Ctrl' { 2 }
+                'Shift' { 3 }
+                Default { 4 }
             }
         }
         [Array]::Sort($sort, $HotKeyArray)
