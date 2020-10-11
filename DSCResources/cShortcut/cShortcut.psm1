@@ -289,7 +289,7 @@ function Test-TargetResource {
 
 function New-Shortcut {
     [CmdletBinding()]
-    [OutputType([System.__ComObject])]
+    [OutputType([System.IO.FileSystemInfo])]
     param
     (
         # Set Target full path to create shortcut
@@ -305,7 +305,7 @@ function New-Shortcut {
             Position = 1,
             Mandatory,
             ValueFromPipelineByPropertyName)]
-        #[validateScript({Test-Path (Split-Path $_ -Parent)})]
+        [Alias('FilePath')]
         [string]$Path,
 
         # Set Description for shortcut.
@@ -319,7 +319,6 @@ function New-Shortcut {
 
         # Set WorkingDirectory for shortcut.
         [Parameter(ValueFromPipelineByPropertyName)]
-        # [validateScript({Test-Path $_})]
         [string]$WorkingDirectory,
 
         # Set IconLocation for shortcut.
@@ -327,72 +326,92 @@ function New-Shortcut {
         [string]$Icon,
 
         [Parameter(ValueFromPipelineByPropertyName)]
-        [string]
-        $HotKey,
+        [string]$HotKey,
 
         # Set WindowStyle for shortcut.
         [Parameter(ValueFromPipelineByPropertyName)]
         [ValidateSet('normal', 'maximized', 'minimized')]
         [string]$WindowStyle = [WindowStyle]::normal,
 
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [string]$AppUserModelID,
+
         # set if you want to show create shortcut result
-        [switch]$PassThru
+        [switch]$PassThru,
+
+        [switch]$Force
     )
 
     begin {
-        $extension = ".lnk"
-        $wsh = New-Object -ComObject Wscript.Shell
+        $extension = '.lnk'
     }
 
     process {
-        # set Path for Shortcut
-        if (-not $Path.EndsWith('.lnk')) {
+        # Set Path of a Shortcut
+        if (-not $Path.EndsWith($extension)) {
             $Path = $Path + $extension
         }
 
-        if ($HotKey) {
-            $HotKeyStr = Format-HotKeyString $HotKey
-        }
+        # if ($HotKey) {
+        #     $HotKeyStr = Format-HotKeyString $HotKey
+        # }
 
         if (-not (Test-Path -LiteralPath (Split-Path $Path -Parent))) {
-            Write-Verbose ("Create parent folder")
-            New-Item -Path (Split-Path $Path -Parent) -ItemType Directory -Force -ErrorAction Stop
+            Write-Verbose 'Create a parent folder'
+            $null = New-Item -Path (Split-Path $Path -Parent) -ItemType Directory -Force -ErrorAction Stop
         }
 
         $fileName = Split-Path $Path -Leaf  # Filename of shortcut
         $Directory = Resolve-Path -Path (Split-Path $Path -Parent) # Directory of shortcut
         $Path = Join-Path $Directory $fileName  # Fullpath of shortcut
 
-        #Remove existing shortcut
-        if (Test-Path -LiteralPath $path) {
-            Write-Verbose ("Remove existing shortcut file")
-            Remove-Item $path -Force -ErrorAction SilentlyContinue
+        #Remove existing shortcut (when the Force switch is specified)
+        if (Test-Path -LiteralPath $Path -PathType Leaf) {
+            if ($Force) {
+                Write-Verbose 'Remove existing shortcut file'
+                Remove-Item $Path -Force -ErrorAction SilentlyContinue
+            }
+            else {
+                Write-Error -Exception ([System.IO.IOException]::new("The file '$Path' is already exists."))
+                return
+            }
         }
 
-        # Call Wscript to create Shortcut
-        Write-Verbose ("Trying to create Shortcut for name '{0}'" -f $path)
+        # Call IShellLink to create Shortcut
+        Write-Verbose ("Trying to create Shortcut to '{0}'" -f $Path)
         try {
-            $shortCut = $wsh.CreateShortCut($path)
-            $shortCut.TargetPath = $TargetPath
-            $shortCut.Description = $Description
-            $shortCut.WindowStyle = [int][WindowStyle]$WindowStyle
-            $shortCut.Arguments = $Arguments
-            $shortCut.WorkingDirectory = $WorkingDirectory
+            $Shortcut = New-Object -TypeName ShellLink
+            $Shortcut.TargetPath = $TargetPath
+            $Shortcut.Description = $Description
+            $Shortcut.WindowStyle = [int][WindowStyle]$WindowStyle
+            $Shortcut.Arguments = $Arguments
+            $Shortcut.WorkingDirectory = $WorkingDirectory
             if ($PSBoundParameters.ContainsKey('Icon')) {
-                $shortCut.IconLocation = $Icon
+                $Shortcut.IconLocation = $Icon
             }
-            if ($HotKeyStr) {
-                $shortCut.Hotkey = $HotKeyStr
+            if ($PSBoundParameters.ContainsKey('AppUserModelID')) {
+                $Shortcut.AppUserModelID = $AppUserModelID
             }
-            $shortCut.Save()
+            # Not supported yet
+            # if ($HotKeyStr) {
+            #     $Shortcut.Hotkey = $HotKeyStr
+            # }
+            $Shortcut.Save($Path)
             Write-Verbose ('Shortcut file created successfully')
         }
-        catch [Exception] {
-            Write-Error $_.Exception
+        catch {
+            Write-Error -Exception $_.Exception
+            return
+        }
+        finally {
+            if ($Shortcut -is [System.IDisposable]) {
+                $Shortcut.Dispose()
+                $Shortcut = $null
+            }
         }
 
         if ($PSBoundParameters.PassThru) {
-            $shortCut
+            Get-Item -LiteralPath $Path
         }
     }
 
