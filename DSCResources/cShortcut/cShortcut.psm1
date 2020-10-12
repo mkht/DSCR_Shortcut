@@ -295,7 +295,7 @@ function Get-Shortcut {
         # Path of shortcut files
         [Parameter(Position = 0, Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName')]
-        [ValidateScript( { $_ | ForEach-Object { Test-Path -LiteralPath $_ } })]
+        [ValidateScript( { Test-Path -LiteralPath $_ -PathType Leaf } )]
         [string]$Path,
 
         [switch]$ReadOnly
@@ -334,21 +334,21 @@ function New-Shortcut {
     [OutputType([System.IO.FileSystemInfo])]
     param
     (
-        # Set Target full path to create shortcut
+        # set file path to create shortcut. If the path not ends with '.lnk', extension will be add automatically.
         [Parameter(
             Position = 0,
             Mandatory,
             ValueFromPipelineByPropertyName)]
-        [Alias('Target')]
-        [string]$TargetPath,
+        [Alias('FilePath')]
+        [string]$Path,
 
-        # set file path to create shortcut. If the path not ends with '.lnk', extension will be add automatically.
+        # Set Target full path to create shortcut
         [Parameter(
             Position = 1,
             Mandatory,
             ValueFromPipelineByPropertyName)]
-        [Alias('FilePath')]
-        [string]$Path,
+        [Alias('Target')]
+        [string]$TargetPath,
 
         # Set Description for shortcut.
         [Parameter(ValueFromPipelineByPropertyName)]
@@ -439,7 +439,7 @@ function New-Shortcut {
             #     $Shortcut.Hotkey = $HotKeyStr
             # }
             $Shortcut.Save($Path)
-            Write-Verbose ('Shortcut file created successfully')
+            Write-Verbose ('Shortcut file created successfully.')
         }
         catch {
             Write-Error -Exception $_.Exception
@@ -452,7 +452,154 @@ function New-Shortcut {
             }
         }
 
-        if ($PSBoundParameters.PassThru) {
+        if ($PassThru) {
+            Get-Item -LiteralPath $Path
+        }
+    }
+
+    end {}
+}
+
+function Update-Shortcut {
+    [CmdletBinding(DefaultParameterSetName = 'FilePath')]
+    [OutputType([System.IO.FileSystemInfo])]
+    param
+    (
+        # Set file path to update shortcut. If the path not ends with '.lnk', extension will be add automatically.
+        [Parameter(
+            Position = 0,
+            Mandatory,
+            ValueFromPipeline,
+            ValueFromPipelineByPropertyName,
+            ParameterSetName = 'FilePath')]
+        [Alias('FilePath')]
+        [string]$Path,
+
+        [Parameter(
+            Position = 0,
+            Mandatory,
+            ValueFromPipeline,
+            ParameterSetName = 'ShellLink')]
+        [ShellLink]$InputObject,
+
+        # Set Target full path for shortcut
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [Alias('Target')]
+        [string]$TargetPath,
+
+        # Set Description for shortcut.
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [Alias('Comment')]
+        [string]$Description,
+
+        # Set Arguments for shortcut.
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [string]$Arguments,
+
+        # Set WorkingDirectory for shortcut.
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [string]$WorkingDirectory,
+
+        # Set IconLocation for shortcut.
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [string]$Icon,
+
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [string]$HotKey,
+
+        # Set WindowStyle for shortcut.
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [ValidateSet('normal', 'maximized', 'minimized')]
+        [string]$WindowStyle = [WindowStyle]::normal,
+
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [string]$AppUserModelID,
+
+        # set if you want to show create shortcut result
+        [switch]$PassThru,
+
+        [switch]$Force
+    )
+
+    begin {
+        $extension = '.lnk'
+    }
+
+    process {
+        if ($PSCmdlet.ParameterSetName -eq 'FilePath') {
+            if (-not $Path.EndsWith($extension)) {
+                $Path = $Path + $extension
+            }
+
+            if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+                if ($Force -and $TargetPath) {
+                    New-Shortcut @PSBoundParameters
+                    return
+                }
+                else {
+                    Write-Error -Exception ([System.IO.FileNotFoundException]::new("The file '$Path' does not exists."))
+                    return
+                }
+            }
+        }
+        elseif ($PSCmdlet.ParameterSetName -eq 'ShellLink') {
+            if (-not ($InputObject.FilePath)) {
+                Write-Error -Exception ([System.ArgumentException]::new("The InputObject does not valid."))
+                return
+            }
+        }
+
+        if ($PSCmdlet.ParameterSetName -eq 'FilePath') {
+            $InputObject = New-Object -TypeName ShellLink
+        }
+        elseif ($PSCmdlet.ParameterSetName -eq 'ShellLink') {
+            $Path = $InputObject.FilePath
+        }
+
+        # Call IShellLink to update Shortcut
+        Write-Verbose ("Updating Shortcut for '{0}'" -f $Path)
+        try {
+            $Shortcut = $InputObject
+            if ($PSBoundParameters.ContainsKey('TargetPath')) {
+                $Shortcut.TargetPath = $TargetPath
+            }
+            if ($PSBoundParameters.ContainsKey('Description')) {
+                $Shortcut.Description = $Description
+            }
+            if ($PSBoundParameters.ContainsKey('WindowStyle')) {
+                $Shortcut.WindowStyle = [int][WindowStyle]$WindowStyle
+            }
+            if ($PSBoundParameters.ContainsKey('Arguments')) {
+                $Shortcut.Arguments = $Arguments
+            }
+            if ($PSBoundParameters.ContainsKey('WorkingDirectory')) {
+                $Shortcut.WorkingDirectory = $WorkingDirectory
+            }
+            if ($PSBoundParameters.ContainsKey('Icon')) {
+                $Shortcut.IconLocation = $Icon
+            }
+            if ($PSBoundParameters.ContainsKey('AppUserModelID')) {
+                $Shortcut.AppUserModelID = $AppUserModelID
+            }
+            # Not supported yet
+            # if ($HotKeyStr) {
+            #     $Shortcut.Hotkey = $HotKeyStr
+            # }
+            $Shortcut.Save($Path)
+            Write-Verbose ('Shortcut file updated successfully.')
+        }
+        catch {
+            Write-Error -Exception $_.Exception
+            return
+        }
+        finally {
+            if ($Shortcut -is [System.IDisposable]) {
+                $Shortcut.Dispose()
+                $Shortcut = $null
+            }
+        }
+
+        if ($PassThru) {
             Get-Item -LiteralPath $Path
         }
     }
