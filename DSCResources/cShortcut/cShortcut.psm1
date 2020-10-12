@@ -1,4 +1,4 @@
-# Import ShellLink class
+﻿# Import ShellLink class
 $ShellLinkPath = Join-Path $PSScriptRoot '..\..\Libs\ShellLink\ShellLink.cs'
 if (Test-Path -LiteralPath $ShellLinkPath -PathType Leaf) {
     Add-Type -TypeDefinition (Get-Content -LiteralPath $ShellLinkPath -Raw -Encoding UTF8) -Language 'CSharp' -ErrorAction Stop
@@ -168,7 +168,7 @@ function Set-TargetResource {
     else {
         # Ensure = "Present"
         $arg = $PSBoundParameters
-        $arg.Remove('Ensure')
+        $null = $arg.Remove('Ensure')
         Update-Shortcut @arg -Force
     }
 
@@ -485,7 +485,7 @@ function New-Shortcut {
 }
 
 function Update-Shortcut {
-    [CmdletBinding(DefaultParameterSetName = 'FilePath')]
+    [CmdletBinding(DefaultParameterSetName = 'ShellLink')]
     [OutputType([System.IO.FileSystemInfo])]
     param
     (
@@ -507,36 +507,44 @@ function Update-Shortcut {
         [ShellLink]$InputObject,
 
         # Set Target full path for shortcut
-        [Parameter(ValueFromPipelineByPropertyName)]
+        [Parameter(ParameterSetName = 'FilePath', ValueFromPipelineByPropertyName)]
+        [Parameter(ParameterSetName = 'ShellLink')]
         [Alias('Target')]
         [string]$TargetPath,
 
         # Set Description for shortcut.
-        [Parameter(ValueFromPipelineByPropertyName)]
+        [Parameter(ParameterSetName = 'FilePath', ValueFromPipelineByPropertyName)]
+        [Parameter(ParameterSetName = 'ShellLink')]
         [Alias('Comment')]
         [string]$Description,
 
         # Set Arguments for shortcut.
-        [Parameter(ValueFromPipelineByPropertyName)]
+        [Parameter(ParameterSetName = 'FilePath', ValueFromPipelineByPropertyName)]
+        [Parameter(ParameterSetName = 'ShellLink')]
         [string]$Arguments,
 
         # Set WorkingDirectory for shortcut.
-        [Parameter(ValueFromPipelineByPropertyName)]
+        [Parameter(ParameterSetName = 'FilePath', ValueFromPipelineByPropertyName)]
+        [Parameter(ParameterSetName = 'ShellLink')]
         [string]$WorkingDirectory,
 
         # Set IconLocation for shortcut.
-        [Parameter(ValueFromPipelineByPropertyName)]
+        [Parameter(ParameterSetName = 'FilePath', ValueFromPipelineByPropertyName)]
+        [Parameter(ParameterSetName = 'ShellLink')]
         [string]$Icon,
 
-        [Parameter(ValueFromPipelineByPropertyName)]
+        [Parameter(ParameterSetName = 'FilePath', ValueFromPipelineByPropertyName)]
+        [Parameter(ParameterSetName = 'ShellLink')]
         [string]$HotKey,
 
         # Set WindowStyle for shortcut.
-        [Parameter(ValueFromPipelineByPropertyName)]
+        [Parameter(ParameterSetName = 'FilePath', ValueFromPipelineByPropertyName)]
+        [Parameter(ParameterSetName = 'ShellLink')]
         [ValidateSet('normal', 'maximized', 'minimized')]
         [string]$WindowStyle = [WindowStyle]::normal,
 
-        [Parameter(ValueFromPipelineByPropertyName)]
+        [Parameter(ParameterSetName = 'FilePath', ValueFromPipelineByPropertyName)]
+        [Parameter(ParameterSetName = 'ShellLink')]
         [string]$AppUserModelID,
 
         # set if you want to show create shortcut result
@@ -687,6 +695,7 @@ function ConvertFrom-HotKeyString {
         [uint16]$HOTKEYF_ALT = 0x0400
         # [uint16]$HOTKEYF_EXT = 0x0800  #?
 
+        Add-Type -AssemblyName System.Windows.Forms
         $KeysConverter = New-Object -TypeName 'System.Windows.Forms.KeysConverter'
     }
 
@@ -749,10 +758,15 @@ function ConvertTo-HotKeyString {
         [uint16]$HOTKEYF_ALT = 0x0400
         # [uint16]$HOTKEYF_EXT = 0x0800  #?
 
+        Add-Type -AssemblyName System.Windows.Forms
         $KeysConverter = New-Object -TypeName 'System.Windows.Forms.KeysConverter'
     }
 
     Process {
+        if ($HotKeyCode -eq 0x0000) {
+            return [string]::Empty
+        }
+
         [string[]]$local:HotKeyArray = @()
 
         # Modifier Keys
