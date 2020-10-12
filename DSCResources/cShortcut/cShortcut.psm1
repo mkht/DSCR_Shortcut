@@ -22,7 +22,7 @@ function Get-TargetResource {
     param
     (
         [Parameter()]
-        [ValidateSet("Present", "Absent")]
+        [ValidateSet('Present', 'Absent')]
         [string]
         $Ensure = [Ensure]::Present,
 
@@ -54,9 +54,12 @@ function Get-TargetResource {
         [string]
         $HotKey,
 
-        [ValidateSet("normal", "maximized", "minimized")]
+        [ValidateSet('normal', 'maximized', 'minimized')]
         [string]
-        $WindowStyle = [WindowStyle]::normal
+        $WindowStyle = [WindowStyle]::normal,
+
+        [Parameter()]
+        [string]$AppUserModelID
     )
 
     if (-not $Path.EndsWith('.lnk')) {
@@ -66,31 +69,40 @@ function Get-TargetResource {
 
     $Ensure = [Ensure]::Present
 
-    # check file exists
-    if (-not (Test-Path -LiteralPath $Path)) {
-        Write-Verbose 'File not found.'
-        $Ensure = [Ensure]::Absent
-    }
-    else {
-        $shortcut = Get-Shortcut -Path $Path -ErrorAction Continue
-    }
-    $returnValue = @{
-        Ensure           = $Ensure
-        Path             = $Path
-        Target           = $shortcut.TargetPath
-        WorkingDirectory = $shortcut.WorkingDirectory
-        Arguments        = $shortcut.Arguments
-        Description      = $shortcut.Description
-        Icon             = $shortcut.IconLocation
-        HotKey           = $shortcut.Hotkey
-        WindowStyle      = [WindowStyle]::undefined
-    }
+    try {
+        # check file exists
+        if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+            Write-Verbose 'File not found.'
+            $Ensure = [Ensure]::Absent
+        }
+        else {
+            $Shortcut = Get-Shortcut -Path $Path -ReadOnly -ErrorAction Continue
+        }
+        $returnValue = @{
+            Ensure           = $Ensure
+            Path             = $Path
+            Target           = $Shortcut.TargetPath
+            WorkingDirectory = $Shortcut.WorkingDirectory
+            Arguments        = $Shortcut.Arguments
+            Description      = $Shortcut.Description
+            Icon             = $Shortcut.IconLocation
+            HotKey           = $Shortcut.Hotkey
+            WindowStyle      = [WindowStyle]::undefined
+            AppUserModelID   = $Shortcut.AppUserModelID
+        }
 
-    if ($shortcut.WindowStyle -as [WindowStyle]) {
-        $returnValue.WindowStyle = [WindowStyle]$shortcut.WindowStyle
-    }
+        if ($Shortcut.WindowStyle -as [WindowStyle]) {
+            $returnValue.WindowStyle = [WindowStyle]$Shortcut.WindowStyle
+        }
 
-    $returnValue
+        $returnValue
+    }
+    finally {
+        if ($Shortcut -is [IDisposable]) {
+            $Shortcut.Dispose()
+            $Shortcut = $null
+        }
+    }
 } # end of Get-TargetResource
 
 
@@ -99,7 +111,7 @@ function Set-TargetResource {
     param
     (
         [Parameter()]
-        [ValidateSet("Present", "Absent")]
+        [ValidateSet('Present', 'Absent')]
         [string]
         $Ensure = [Ensure]::Present,
 
@@ -131,9 +143,12 @@ function Set-TargetResource {
         [string]
         $HotKey,
 
-        [ValidateSet("normal", "maximized", "minimized")]
+        [ValidateSet('normal', 'maximized', 'minimized')]
         [string]
-        $WindowStyle = [WindowStyle]::normal
+        $WindowStyle = [WindowStyle]::normal,
+
+        [Parameter()]
+        [string]$AppUserModelID
     )
 
     if (-not $Path.EndsWith('.lnk')) {
@@ -154,7 +169,7 @@ function Set-TargetResource {
         # Ensure = "Present"
         $arg = $PSBoundParameters
         $arg.Remove('Ensure')
-        New-Shortcut @arg
+        Update-Shortcut @arg -Force
     }
 
 } # end of Set-TargetResource
@@ -166,7 +181,7 @@ function Test-TargetResource {
     param
     (
         [Parameter()]
-        [ValidateSet("Present", "Absent")]
+        [ValidateSet('Present', 'Absent')]
         [string]
         $Ensure = [Ensure]::Present,
 
@@ -198,9 +213,12 @@ function Test-TargetResource {
         [string]
         $HotKey,
 
-        [ValidateSet("normal", "maximized", "minimized")]
+        [ValidateSet('normal', 'maximized', 'minimized')]
         [string]
-        $WindowStyle = [WindowStyle]::normal
+        $WindowStyle = [WindowStyle]::normal,
+
+        [Parameter()]
+        [string]$AppUserModelID
     )
 
     <#  想定される状態パターンと返却するべき値
@@ -265,18 +283,23 @@ function Test-TargetResource {
                     $NotMatched += 'Icon'
                 }
 
-                if ($PSBoundParameters.ContainsKey('HotKey') -and ($Info.HotKey -ne $HotKey)) {
-                    $NotMatched += 'HotKey'
-                }
+                # Not supported yet
+                # if ($PSBoundParameters.ContainsKey('HotKey') -and ($Info.HotKey -ne $HotKey)) {
+                #     $NotMatched += 'HotKey'
+                # }
 
                 if ($Info.WindowStyle -ne $WindowStyle) {
                     $NotMatched += 'WindowStyle'
                 }
 
+                if ($Info.AppUserModelID -ne $AppUserModelID) {
+                    $NotMatched += 'AppUserModelID'
+                }
+
                 $ReturnValue = ($NotMatched.Count -eq 0)
                 if (-not $ReturnValue) {
                     $NotMatched | ForEach-Object {
-                        Write-Verbose ('{0} property is not matched!' -f $_)
+                        Write-Verbose ('{0} property does not match!' -f $_)
                     }
                 }
             }
