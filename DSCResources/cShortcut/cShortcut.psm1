@@ -636,21 +636,21 @@ function Format-HotKeyString {
     [OutputType([string])]
     Param(
         [Parameter(Mandatory, Position = 0)]
-        [string[]]$HotKeyArray
+        [string]$HotKey
     )
 
-    $HotKeyArray = $HotKey.split('+').Trim()
-    if ($HotKeyArray.Count -notin (2..4)) {
+    [string[]]$local:HotKeyArray = $HotKey.split('+').Trim()
+    if ($local:HotKeyArray.Count -notin (2..4)) {
         #最短で修飾+キーの2要素、最長でAlt+Ctrl+Shift+キーの4要素
-        Write-Error ('HotKey is not valid format.')
+        Write-Error 'HotKey is not valid format.'
     }
-    elseif ($HotKeyArray[0] -notmatch '^(Ctrl|Alt|Shift)$') {
+    elseif ($local:HotKeyArray[0] -notmatch '^(Ctrl|Alt|Shift)$') {
         #修飾キーから始まっていないとダメ
-        Write-Error ('HotKey is not valid format.')
+        Write-Error 'HotKey is not valid format.'
     }
     else {
         #優先順位付きソート
-        $sort = $HotKeyArray | ForEach-Object {
+        $local:sort = $local:HotKeyArray | ForEach-Object {
             switch ($_) {
                 'Alt' { 1 }
                 'Ctrl' { 2 }
@@ -658,8 +658,120 @@ function Format-HotKeyString {
                 Default { 4 }
             }
         }
-        [Array]::Sort($sort, $HotKeyArray)
-        $HotKeyArray -join '+'
+        [Array]::Sort($local:sort, $local:HotKeyArray)
+        $local:HotKeyArray -join '+'
+    }
+}
+
+
+function ConvertFrom-HotKeyString {
+    [CmdletBinding()]
+    [OutputType([uint16])]
+    Param(
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [string]$HotKey
+    )
+
+    begin {
+        [uint16]$HOTKEYF_SHIFT = 0x0100
+        [uint16]$HOTKEYF_CONTROL = 0x0200
+        [uint16]$HOTKEYF_ALT = 0x0400
+        # [uint16]$HOTKEYF_EXT = 0x0800  #?
+
+        $KeysConverter = New-Object -TypeName 'System.Windows.Forms.KeysConverter'
+    }
+
+    Process {
+        [uint16]$local:HotKeyCode = 0x0000
+        $HotKey = Format-HotKeyString -HotKey $HotKey
+        [string[]]$local:HotKeyArray = $HotKey.split('+').Trim()
+
+        switch ($local:HotKeyArray) {
+            'Shift' {
+                $local:HotKeyCode = $local:HotKeyCode -bor $HOTKEYF_SHIFT
+                continue
+            }
+
+            'Ctrl' {
+                $local:HotKeyCode = $local:HotKeyCode -bor $HOTKEYF_CONTROL
+                continue
+            }
+
+            'Alt' {
+                $local:HotKeyCode = $local:HotKeyCode -bor $HOTKEYF_ALT
+                continue
+            }
+
+            Default {
+                try {
+                    $local:HotKeyCode = $local:HotKeyCode -bor $KeysConverter.ConvertFromString($_.ToUpper())
+                }
+                catch [ArgumentException] {
+                    Write-Error 'HotKey is not valid format.'
+                    return
+                }
+                catch {
+                    Write-Error -Exception $_.Exception
+                    return
+                }
+            }
+        }
+
+        $local:HotKeyCode
+    }
+
+    End {
+        $KeysConverter = $null
+    }
+}
+
+
+function ConvertTo-HotKeyString {
+    [CmdletBinding()]
+    [OutputType([string])]
+    Param(
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [uint16]$HotKeyCode
+    )
+
+    begin {
+        [uint16]$HOTKEYF_SHIFT = 0x0100
+        [uint16]$HOTKEYF_CONTROL = 0x0200
+        [uint16]$HOTKEYF_ALT = 0x0400
+        # [uint16]$HOTKEYF_EXT = 0x0800  #?
+
+        $KeysConverter = New-Object -TypeName 'System.Windows.Forms.KeysConverter'
+    }
+
+    Process {
+        [string[]]$local:HotKeyArray = @()
+
+        # Modifier Keys
+        if ($HotKeyCode -band $HOTKEYF_SHIFT) {
+            $local:HotKeyArray += 'Shift'
+        }
+        if ($HotKeyCode -band $HOTKEYF_CONTROL) {
+            $local:HotKeyArray += 'Ctrl'
+        }
+        if ($HotKeyCode -band $HOTKEYF_ALT) {
+            $local:HotKeyArray += 'Alt'
+        }
+
+        # Key
+        try {
+            $local:HotKeyArray += $KeysConverter.ConvertToString($HotKeyCode -band 0x00ff)
+        }
+        catch {
+            Write-Error -Exception $_.Exception
+            return
+        }
+
+        # return formatted string
+        Format-HotKeyString -HotKey ([string]::Join('+', $local:HotKeyArray))
+    }
+
+    End {
+        $KeysConverter = $null
     }
 }
 
