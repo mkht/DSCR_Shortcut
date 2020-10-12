@@ -1,4 +1,4 @@
-﻿# Import ShellLink class
+# Import ShellLink class
 $ShellLinkPath = Join-Path $PSScriptRoot '..\..\Libs\ShellLink\ShellLink.cs'
 if (Test-Path -LiteralPath $ShellLinkPath -PathType Leaf) {
     Add-Type -TypeDefinition (Get-Content -LiteralPath $ShellLinkPath -Raw -Encoding UTF8) -Language 'CSharp' -ErrorAction Stop
@@ -86,7 +86,7 @@ function Get-TargetResource {
             Arguments        = $Shortcut.Arguments
             Description      = $Shortcut.Description
             Icon             = $Shortcut.IconLocation
-            HotKey           = $Shortcut.Hotkey
+            HotKey           = ConvertTo-HotKeyString -HotKeyCode $Shortcut.Hotkey
             WindowStyle      = [WindowStyle]::undefined
             AppUserModelID   = $Shortcut.AppUserModelID
         }
@@ -283,16 +283,15 @@ function Test-TargetResource {
                     $NotMatched += 'Icon'
                 }
 
-                # Not supported yet
-                # if ($PSBoundParameters.ContainsKey('HotKey') -and ($Info.HotKey -ne $HotKey)) {
-                #     $NotMatched += 'HotKey'
-                # }
+                if ($PSBoundParameters.ContainsKey('HotKey') -and ($Info.HotKey -ne $HotKeyStr)) {
+                    $NotMatched += 'HotKey'
+                }
 
-                if ($Info.WindowStyle -ne $WindowStyle) {
+                if ($PSBoundParameters.ContainsKey('WindowStyle') -and ($Info.WindowStyle -ne $WindowStyle)) {
                     $NotMatched += 'WindowStyle'
                 }
 
-                if ($Info.AppUserModelID -ne $AppUserModelID) {
+                if ($PSBoundParameters.ContainsKey('AppUserModelID') -and ($Info.AppUserModelID -ne $AppUserModelID)) {
                     $NotMatched += 'AppUserModelID'
                 }
 
@@ -417,9 +416,12 @@ function New-Shortcut {
             $Path = $Path + $extension
         }
 
-        # if ($HotKey) {
-        #     $HotKeyStr = Format-HotKeyString $HotKey
-        # }
+        if ($HotKey) {
+            $local:HotKeyCode = ConvertFrom-HotKeyString -HotKey $HotKey -ErrorAction Stop
+        }
+        else {
+            $local:HotKeyCode = 0x0000
+        }
 
         if (-not (Test-Path -LiteralPath (Split-Path $Path -Parent))) {
             Write-Verbose 'Create a parent folder'
@@ -457,12 +459,11 @@ function New-Shortcut {
             if ($PSBoundParameters.ContainsKey('AppUserModelID')) {
                 $Shortcut.AppUserModelID = $AppUserModelID
             }
-            # Not supported yet
-            # if ($HotKeyStr) {
-            #     $Shortcut.Hotkey = $HotKeyStr
-            # }
+            if ($PSBoundParameters.ContainsKey('Hotkey')) {
+                $Shortcut.Hotkey = $local:HotKeyCode
+            }
             $Shortcut.Save($Path)
-            Write-Verbose ('Shortcut file created successfully.')
+            Write-Verbose 'Shortcut file created successfully.'
         }
         catch {
             Write-Error -Exception $_.Exception
@@ -572,16 +573,24 @@ function Update-Shortcut {
             }
         }
 
-        if ($PSCmdlet.ParameterSetName -eq 'FilePath') {
-            $InputObject = New-Object -TypeName ShellLink
+        if ($HotKey) {
+            $local:HotKeyCode = ConvertFrom-HotKeyString -HotKey $HotKey -ErrorAction Stop
         }
-        elseif ($PSCmdlet.ParameterSetName -eq 'ShellLink') {
-            $Path = $InputObject.FilePath
+        else {
+            $local:HotKeyCode = 0x0000
         }
 
         # Call IShellLink to update Shortcut
         Write-Verbose ("Updating Shortcut for '{0}'" -f $Path)
         try {
+            if ($PSCmdlet.ParameterSetName -eq 'FilePath') {
+                $InputObject = New-Object -TypeName ShellLink
+                $InputObject.Load($Path)
+            }
+            elseif ($PSCmdlet.ParameterSetName -eq 'ShellLink') {
+                $Path = $InputObject.FilePath
+            }
+
             $Shortcut = $InputObject
             if ($PSBoundParameters.ContainsKey('TargetPath')) {
                 $Shortcut.TargetPath = $TargetPath
@@ -604,12 +613,12 @@ function Update-Shortcut {
             if ($PSBoundParameters.ContainsKey('AppUserModelID')) {
                 $Shortcut.AppUserModelID = $AppUserModelID
             }
-            # Not supported yet
-            # if ($HotKeyStr) {
-            #     $Shortcut.Hotkey = $HotKeyStr
-            # }
+            if ($PSBoundParameters.ContainsKey('Hotkey')) {
+                $Shortcut.Hotkey = $local:HotKeyCode
+            }
+
             $Shortcut.Save($Path)
-            Write-Verbose ('Shortcut file updated successfully.')
+            Write-Verbose 'Shortcut file updated successfully.'
         }
         catch {
             Write-Error -Exception $_.Exception
