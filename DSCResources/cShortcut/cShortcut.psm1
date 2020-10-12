@@ -287,6 +287,48 @@ function Test-TargetResource {
 } # end of Test-TargetResource
 
 
+function Get-Shortcut {
+    [CmdletBinding()]
+    [OutputType([ShellLink])]
+    param
+    (
+        # Path of shortcut files
+        [Parameter(Position = 0, Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        [Alias('FullName')]
+        [ValidateScript( { $_ | ForEach-Object { Test-Path -LiteralPath $_ } })]
+        [string]$Path,
+
+        [switch]$ReadOnly
+    )
+
+    Begin {
+        if ($ReadOnly) {
+            [int]$flag = 0x00000000 #STGM_READ
+        }
+        else {
+            [int]$flag = 0x00000002 #STGM_READWRITE
+        }
+    }
+
+    Process {
+        try {
+            $Shortcut = New-Object -TypeName ShellLink
+            $Shortcut.Load($Path, $flag)
+            return $Shortcut
+        }
+        catch {
+            if ($Shortcut -is [IDisposable]) {
+                $Shortcut.Dispose()
+                $Shortcut = $null
+            }
+
+            Write-Error -Exception $_.Exception
+            return $null
+        }
+    }
+}
+
+
 function New-Shortcut {
     [CmdletBinding()]
     [OutputType([System.IO.FileSystemInfo])]
@@ -416,48 +458,6 @@ function New-Shortcut {
     }
 
     end {}
-}
-
-
-function Get-Shortcut {
-    [CmdletBinding()]
-    [OutputType([ShellLink])]
-    param
-    (
-        # Path of shortcut files
-        [Parameter(Position = 0, Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
-        [Alias('FullName')]
-        [ValidateScript( { $_ | ForEach-Object { Test-Path -LiteralPath $_ } })]
-        [string]$Path,
-
-        [switch]$ReadOnly
-    )
-
-    Begin {
-        if ($ReadOnly) {
-            [int]$flag = 0x00000000 #STGM_READ
-        }
-        else {
-            [int]$flag = 0x00000002 #STGM_READWRITE
-        }
-    }
-
-    Process {
-        try {
-            $Shortcut = New-Object -TypeName ShellLink
-            $Shortcut.Load($Path, $flag)
-            return $Shortcut
-        }
-        catch {
-            if ($Shortcut -is [IDisposable]) {
-                $Shortcut.Dispose()
-                $Shortcut = $null
-            }
-
-            Write-Error -Exception $_.Exception
-            return $null
-        }
-    }
 }
 
 
