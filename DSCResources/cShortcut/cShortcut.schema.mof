@@ -11,5 +11,5 @@ class cShortcut : OMI_BaseResource
     [Write] String Icon;
     [Write] String HotKey;
     [Write, ValueMap{"normal","maximized","minimized"}, Values{"normal","maximized","minimized"}] String WindowStyle;
+    [Write] String AppUserModelID;
 };
-

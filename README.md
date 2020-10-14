@@ -1,7 +1,7 @@
 DSCR_Shortcut
 ====
 
-PowerShell DSC Resource to create shortcut file.
+PowerShell DSC Resource to create shortcut file (LNK file).
 
 ## Install
 You can install Resource through [PowerShell Gallery](https://www.powershellgallery.com/packages/DSCR_Shortcut/).
@@ -48,6 +48,12 @@ PowerShell DSC Resource to create shortcut file.
     + The syntax is: `"{KeyModifier} + {KeyName}"` ( e.g. `"Alt+Ctrl+Q"`, `"Shift+F9"` )
     + If the hotkey not working after configuration, try to reboot.
 
++ [string] **AppUserModelID** (Write):
+    + Specifies AppUserModelID of the shortcut
+    + About AppUserModelID, See Microsoft Docs.  
+      https://docs.microsoft.com/en-us/windows/win32/shell/appids
+
+
 ## Examples
 + **Example 1**: Create a shortcut to the Internet Explore InPrivate mode to the Administrator's desktop
 ```PowerShell
@@ -63,7 +69,7 @@ Configuration Example1
 }
 ```
 
-+ **Example 2**: WindowStyle, WorkingDirectory, Description, Icon, Hotkey
++ **Example 2**: Specifies All Properties
 ```PowerShell
 Configuration Example2
 {
@@ -71,18 +77,33 @@ Configuration Example2
     cShortcut IE_Desktop
     {
         Path             = 'C:\Users\Administrator\Desktop\PrivateIE.lnk'
-        Target           = "C:\Program Files\Internet Explorer\iexplore.exe"
+        Target           = 'C:\Program Files\Internet Explorer\iexplore.exe'
         Arguments        = '-private'
         WindowStyle      = 'maximized'
         WorkingDirectory = 'C:\work'
         Description      = 'This is a shortcut to the IE'
         Icon             = 'shell32.dll,277'
         HotKey           = 'Ctrl+Shift+U'
+        AppUserModelID   = 'Microsoft.InternetExplorer.Default'
     }
 }
 ```
 
 ## ChangeLog
+### v2.0.0
+ #### BREAKING CHANGES :boom:
+  - v1 of the module initializes properties not specified in the configuration when updating an existing shortcut file, but v2 preserves them.
+
+ #### New Features :sparkles:
+  - Add `AppUserModelID` property.  
+    You can use this to control the grouping of the taskbar. See Microsoft Docs for more information.  
+    https://docs.microsoft.com/en-us/windows/win32/shell/appids
+
+ #### Improvements :zap:
+  - For better performance and future scalability, The internal interface has been changed from `WshShortcut` to `IShellLink`.
+  - Avoid positional parameters.
+  - Fix minor issues.
+
 ### v1.3.8
  + Changed not to test for properties not explicitly specified.
 

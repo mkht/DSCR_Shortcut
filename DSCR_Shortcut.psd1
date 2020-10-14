@@ -12,7 +12,7 @@
     # RootModule = ''
 
     # このモジュールのバージョン番号です。
-    ModuleVersion        = '1.3.8'
+    ModuleVersion        = '2.0.0'
 
     # このモジュールを一意に識別するために使用される ID
     GUID                 = 'dc24c0c9-ad6b-4fce-9ce4-2410f9ce4f7f'
@@ -24,7 +24,7 @@
     CompanyName          = ''
 
     # このモジュールの著作権情報
-    Copyright            = '(c) 2019 mkht. All rights reserved.'
+    Copyright            = '(c) 2020 mkht. All rights reserved.'
 
     # このモジュールの機能の説明
     Description          = 'PowerShell DSC Resource to create shortcut file.'

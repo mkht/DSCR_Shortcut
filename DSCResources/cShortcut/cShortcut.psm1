@@ -1,8 +1,13 @@
-﻿Enum Ensure {
+﻿# Import ShellLink class
+$ShellLinkPath = Join-Path $PSScriptRoot '..\..\Libs\ShellLink\ShellLink.cs'
+if (Test-Path -LiteralPath $ShellLinkPath -PathType Leaf) {
+    Add-Type -TypeDefinition (Get-Content -LiteralPath $ShellLinkPath -Raw -Encoding UTF8) -Language 'CSharp' -ErrorAction Stop
+}
+
+Enum Ensure {
     Absent
     Present
 }
-
 
 Enum WindowStyle {
     undefined = 0
@@ -11,14 +16,13 @@ Enum WindowStyle {
     minimized = 7
 }
 
-
 function Get-TargetResource {
     [CmdletBinding()]
     [OutputType([Hashtable])]
     param
     (
         [Parameter()]
-        [ValidateSet("Present", "Absent")]
+        [ValidateSet('Present', 'Absent')]
         [string]
         $Ensure = [Ensure]::Present,
 
@@ -50,9 +54,12 @@ function Get-TargetResource {
         [string]
         $HotKey,
 
-        [ValidateSet("normal", "maximized", "minimized")]
+        [ValidateSet('normal', 'maximized', 'minimized')]
         [string]
-        $WindowStyle = [WindowStyle]::normal
+        $WindowStyle = [WindowStyle]::normal,
+
+        [Parameter()]
+        [string]$AppUserModelID
     )
 
     if (-not $Path.EndsWith('.lnk')) {
@@ -62,31 +69,40 @@ function Get-TargetResource {
 
     $Ensure = [Ensure]::Present
 
-    # check file exists
-    if (-not (Test-Path $Path)) {
-        Write-Verbose 'File not found.'
-        $Ensure = [Ensure]::Absent
-    }
-    else {
-        $shortcut = Get-Shortcut $Path -ErrorAction Continue
-    }
-    $returnValue = @{
-        Ensure           = $Ensure
-        Path             = $Path
-        Target           = $shortcut.TargetPath
-        WorkingDirectory = $shortcut.WorkingDirectory
-        Arguments        = $shortcut.Arguments
-        Description      = $shortcut.Description
-        Icon             = $shortcut.IconLocation
-        HotKey           = $shortcut.Hotkey
-        WindowStyle      = [WindowStyle]::undefined
-    }
+    try {
+        # check file exists
+        if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+            Write-Verbose 'File not found.'
+            $Ensure = [Ensure]::Absent
+        }
+        else {
+            $Shortcut = Get-Shortcut -Path $Path -ReadOnly -ErrorAction Continue
+        }
+        $returnValue = @{
+            Ensure           = $Ensure
+            Path             = $Path
+            Target           = $Shortcut.TargetPath
+            WorkingDirectory = $Shortcut.WorkingDirectory
+            Arguments        = $Shortcut.Arguments
+            Description      = $Shortcut.Description
+            Icon             = $Shortcut.IconLocation
+            HotKey           = ConvertTo-HotKeyString -HotKeyCode $Shortcut.Hotkey
+            WindowStyle      = [WindowStyle]::undefined
+            AppUserModelID   = $Shortcut.AppUserModelID
+        }
 
-    if ($shortcut.WindowStyle -as [WindowStyle]) {
-        $returnValue.WindowStyle = [WindowStyle]$shortcut.WindowStyle
-    }
+        if ($Shortcut.WindowStyle -as [WindowStyle]) {
+            $returnValue.WindowStyle = [WindowStyle]$Shortcut.WindowStyle
+        }
 
-    $returnValue
+        $returnValue
+    }
+    finally {
+        if ($Shortcut -is [IDisposable]) {
+            $Shortcut.Dispose()
+            $Shortcut = $null
+        }
+    }
 } # end of Get-TargetResource
 
 
@@ -95,7 +111,7 @@ function Set-TargetResource {
     param
     (
         [Parameter()]
-        [ValidateSet("Present", "Absent")]
+        [ValidateSet('Present', 'Absent')]
         [string]
         $Ensure = [Ensure]::Present,
 
@@ -127,9 +143,12 @@ function Set-TargetResource {
         [string]
         $HotKey,
 
-        [ValidateSet("normal", "maximized", "minimized")]
+        [ValidateSet('normal', 'maximized', 'minimized')]
         [string]
-        $WindowStyle = [WindowStyle]::normal
+        $WindowStyle = [WindowStyle]::normal,
+
+        [Parameter()]
+        [string]$AppUserModelID
     )
 
     if (-not $Path.EndsWith('.lnk')) {
@@ -144,13 +163,13 @@ function Set-TargetResource {
     # Ensure = "Absent"
     if ($Ensure -eq [Ensure]::Absent) {
         Write-Verbose ('Remove shortcut file "{0}"' -f $Path)
-        Remove-Item $Path -Force
+        Remove-Item -LiteralPath $Path -Force
     }
     else {
         # Ensure = "Present"
         $arg = $PSBoundParameters
-        $arg.Remove('Ensure')
-        New-Shortcut @arg
+        $null = $arg.Remove('Ensure')
+        Update-Shortcut @arg -Force
     }
 
 } # end of Set-TargetResource
@@ -162,7 +181,7 @@ function Test-TargetResource {
     param
     (
         [Parameter()]
-        [ValidateSet("Present", "Absent")]
+        [ValidateSet('Present', 'Absent')]
         [string]
         $Ensure = [Ensure]::Present,
 
@@ -194,9 +213,12 @@ function Test-TargetResource {
         [string]
         $HotKey,
 
-        [ValidateSet("normal", "maximized", "minimized")]
+        [ValidateSet('normal', 'maximized', 'minimized')]
         [string]
-        $WindowStyle = [WindowStyle]::normal
+        $WindowStyle = [WindowStyle]::normal,
+
+        [Parameter()]
+        [string]$AppUserModelID
     )
 
     <#  想定される状態パターンと返却するべき値
@@ -231,7 +253,7 @@ function Test-TargetResource {
     switch ($Ensure) {
         'Absent' {
             # ファイルがなければ$true あれば$false
-            $ReturnValue = (-not (Test-Path $Path -PathType Leaf))
+            $ReturnValue = (-not (Test-Path -LiteralPath $Path -PathType Leaf))
         }
         'Present' {
             $Info = Get-TargetResource -Ensure $Ensure -Path $Path -Target $Target
@@ -261,18 +283,22 @@ function Test-TargetResource {
                     $NotMatched += 'Icon'
                 }
 
-                if ($PSBoundParameters.ContainsKey('HotKey') -and ($Info.HotKey -ne $HotKey)) {
+                if ($PSBoundParameters.ContainsKey('HotKey') -and ($Info.HotKey -ne $HotKeyStr)) {
                     $NotMatched += 'HotKey'
                 }
 
-                if ($Info.WindowStyle -ne $WindowStyle) {
+                if ($PSBoundParameters.ContainsKey('WindowStyle') -and ($Info.WindowStyle -ne $WindowStyle)) {
                     $NotMatched += 'WindowStyle'
+                }
+
+                if ($PSBoundParameters.ContainsKey('AppUserModelID') -and ($Info.AppUserModelID -ne $AppUserModelID)) {
+                    $NotMatched += 'AppUserModelID'
                 }
 
                 $ReturnValue = ($NotMatched.Count -eq 0)
                 if (-not $ReturnValue) {
                     $NotMatched | ForEach-Object {
-                        Write-Verbose ('{0} property is not matched!' -f $_)
+                        Write-Verbose ('{0} property does not match!' -f $_)
                     }
                 }
             }
@@ -283,26 +309,68 @@ function Test-TargetResource {
 } # end of Test-TargetResource
 
 
-function New-Shortcut {
+function Get-Shortcut {
     [CmdletBinding()]
-    [OutputType([System.__ComObject])]
+    [OutputType([ShellLink])]
     param
     (
-        # Set Target full path to create shortcut
+        # Path of shortcut files
+        [Parameter(Position = 0, Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        [Alias('FullName')]
+        [ValidateScript( { Test-Path -LiteralPath $_ -PathType Leaf } )]
+        [string]$Path,
+
+        [switch]$ReadOnly
+    )
+
+    Begin {
+        if ($ReadOnly) {
+            [int]$flag = 0x00000000 #STGM_READ
+        }
+        else {
+            [int]$flag = 0x00000002 #STGM_READWRITE
+        }
+    }
+
+    Process {
+        try {
+            $Shortcut = New-Object -TypeName ShellLink
+            $Shortcut.Load($Path, $flag)
+            return $Shortcut
+        }
+        catch {
+            if ($Shortcut -is [IDisposable]) {
+                $Shortcut.Dispose()
+                $Shortcut = $null
+            }
+
+            Write-Error -Exception $_.Exception
+            return $null
+        }
+    }
+}
+
+
+function New-Shortcut {
+    [CmdletBinding()]
+    [OutputType([System.IO.FileSystemInfo])]
+    param
+    (
+        # set file path to create shortcut. If the path not ends with '.lnk', extension will be add automatically.
         [Parameter(
             Position = 0,
             Mandatory,
             ValueFromPipelineByPropertyName)]
-        [Alias('Target')]
-        [string]$TargetPath,
+        [Alias('FilePath')]
+        [string]$Path,
 
-        # set file path to create shortcut. If the path not ends with '.lnk', extension will be add automatically.
+        # Set Target full path to create shortcut
         [Parameter(
             Position = 1,
             Mandatory,
             ValueFromPipelineByPropertyName)]
-        #[validateScript({Test-Path (Split-Path $_ -Parent)})]
-        [string]$Path,
+        [Alias('Target')]
+        [string]$TargetPath,
 
         # Set Description for shortcut.
         [Parameter(ValueFromPipelineByPropertyName)]
@@ -315,7 +383,6 @@ function New-Shortcut {
 
         # Set WorkingDirectory for shortcut.
         [Parameter(ValueFromPipelineByPropertyName)]
-        # [validateScript({Test-Path $_})]
         [string]$WorkingDirectory,
 
         # Set IconLocation for shortcut.
@@ -323,105 +390,261 @@ function New-Shortcut {
         [string]$Icon,
 
         [Parameter(ValueFromPipelineByPropertyName)]
-        [string]
-        $HotKey,
+        [string]$HotKey,
 
         # Set WindowStyle for shortcut.
         [Parameter(ValueFromPipelineByPropertyName)]
         [ValidateSet('normal', 'maximized', 'minimized')]
         [string]$WindowStyle = [WindowStyle]::normal,
 
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [string]$AppUserModelID,
+
         # set if you want to show create shortcut result
-        [switch]$PassThru
+        [switch]$PassThru,
+
+        [switch]$Force
     )
 
     begin {
-        $extension = ".lnk"
-        $wsh = New-Object -ComObject Wscript.Shell
+        $extension = '.lnk'
     }
 
     process {
-        # set Path for Shortcut
-        if (-not $Path.EndsWith('.lnk')) {
+        # Set Path of a Shortcut
+        if (-not $Path.EndsWith($extension)) {
             $Path = $Path + $extension
         }
 
         if ($HotKey) {
-            $HotKeyStr = Format-HotKeyString $HotKey
+            $local:HotKeyCode = ConvertFrom-HotKeyString -HotKey $HotKey -ErrorAction Stop
+        }
+        else {
+            $local:HotKeyCode = 0x0000
         }
 
-        if (-not (Test-Path (Split-Path $Path -Parent))) {
-            Write-Verbose ("Create parent folder")
-            New-Item -Path (Split-Path $Path -Parent) -ItemType Directory -Force -ErrorAction Stop
+        if (-not (Test-Path -LiteralPath (Split-Path $Path -Parent))) {
+            Write-Verbose 'Create a parent folder'
+            $null = New-Item -Path (Split-Path $Path -Parent) -ItemType Directory -Force -ErrorAction Stop
         }
 
         $fileName = Split-Path $Path -Leaf  # Filename of shortcut
-        $Directory = Resolve-Path (Split-Path $Path -Parent) # Directory of shortcut
+        $Directory = Resolve-Path -Path (Split-Path $Path -Parent) # Directory of shortcut
         $Path = Join-Path $Directory $fileName  # Fullpath of shortcut
 
-        #Remove existing shortcut
-        if (Test-Path $path) {
-            Write-Verbose ("Remove existing shortcut file")
-            Remove-Item $path -Force -ErrorAction SilentlyContinue
+        #Remove existing shortcut (when the Force switch is specified)
+        if (Test-Path -LiteralPath $Path -PathType Leaf) {
+            if ($Force) {
+                Write-Verbose 'Remove existing shortcut file'
+                Remove-Item $Path -Force -ErrorAction SilentlyContinue
+            }
+            else {
+                Write-Error -Exception ([System.IO.IOException]::new("The file '$Path' is already exists."))
+                return
+            }
         }
 
-        # Call Wscript to create Shortcut
-        Write-Verbose ("Trying to create Shortcut for name '{0}'" -f $path)
+        # Call IShellLink to create Shortcut
+        Write-Verbose ("Trying to create Shortcut to '{0}'" -f $Path)
         try {
-            $shortCut = $wsh.CreateShortCut($path)
-            $shortCut.TargetPath = $TargetPath
-            $shortCut.Description = $Description
-            $shortCut.WindowStyle = [int][WindowStyle]$WindowStyle
-            $shortCut.Arguments = $Arguments
-            $shortCut.WorkingDirectory = $WorkingDirectory
+            $Shortcut = New-Object -TypeName ShellLink
+            $Shortcut.TargetPath = $TargetPath
+            $Shortcut.Description = $Description
+            $Shortcut.WindowStyle = [int][WindowStyle]$WindowStyle
+            $Shortcut.Arguments = $Arguments
+            $Shortcut.WorkingDirectory = $WorkingDirectory
             if ($PSBoundParameters.ContainsKey('Icon')) {
-                $shortCut.IconLocation = $Icon
+                $Shortcut.IconLocation = $Icon
             }
-            if ($HotKeyStr) {
-                $shortCut.Hotkey = $HotKeyStr
+            if ($PSBoundParameters.ContainsKey('AppUserModelID')) {
+                $Shortcut.AppUserModelID = $AppUserModelID
             }
-            $shortCut.Save()
-            Write-Verbose ('Shortcut file created successfully')
+            if ($PSBoundParameters.ContainsKey('Hotkey')) {
+                $Shortcut.Hotkey = $local:HotKeyCode
+            }
+            $Shortcut.Save($Path)
+            Write-Verbose 'Shortcut file created successfully.'
         }
-        catch [Exception] {
-            Write-Error $_.Exception
+        catch {
+            Write-Error -Exception $_.Exception
+            return
+        }
+        finally {
+            if ($Shortcut -is [System.IDisposable]) {
+                $Shortcut.Dispose()
+                $Shortcut = $null
+            }
         }
 
-        if ($PSBoundParameters.PassThru) {
-            $shortCut
+        if ($PassThru) {
+            Get-Item -LiteralPath $Path
         }
     }
 
     end {}
 }
 
-
-function Get-Shortcut {
-    [CmdletBinding()]
-    [OutputType([System.__ComObject])]
+function Update-Shortcut {
+    [CmdletBinding(DefaultParameterSetName = 'ShellLink')]
+    [OutputType([System.IO.FileSystemInfo])]
     param
     (
-        # Path of shortcut file
+        # Set file path to update shortcut. If the path not ends with '.lnk', extension will be add automatically.
         [Parameter(
             Position = 0,
             Mandatory,
-            ValueFromPipeline)]
-        [ValidateScript( {$_ | ForEach-Object {Test-Path $_}})]
-        [string[]]$Path
+            ValueFromPipeline,
+            ValueFromPipelineByPropertyName,
+            ParameterSetName = 'FilePath')]
+        [Alias('FilePath')]
+        [string]$Path,
+
+        [Parameter(
+            Position = 0,
+            Mandatory,
+            ValueFromPipeline,
+            ParameterSetName = 'ShellLink')]
+        [ShellLink]$InputObject,
+
+        # Set Target full path for shortcut
+        [Parameter(ParameterSetName = 'FilePath', ValueFromPipelineByPropertyName)]
+        [Parameter(ParameterSetName = 'ShellLink')]
+        [Alias('Target')]
+        [string]$TargetPath,
+
+        # Set Description for shortcut.
+        [Parameter(ParameterSetName = 'FilePath', ValueFromPipelineByPropertyName)]
+        [Parameter(ParameterSetName = 'ShellLink')]
+        [Alias('Comment')]
+        [string]$Description,
+
+        # Set Arguments for shortcut.
+        [Parameter(ParameterSetName = 'FilePath', ValueFromPipelineByPropertyName)]
+        [Parameter(ParameterSetName = 'ShellLink')]
+        [string]$Arguments,
+
+        # Set WorkingDirectory for shortcut.
+        [Parameter(ParameterSetName = 'FilePath', ValueFromPipelineByPropertyName)]
+        [Parameter(ParameterSetName = 'ShellLink')]
+        [string]$WorkingDirectory,
+
+        # Set IconLocation for shortcut.
+        [Parameter(ParameterSetName = 'FilePath', ValueFromPipelineByPropertyName)]
+        [Parameter(ParameterSetName = 'ShellLink')]
+        [string]$Icon,
+
+        [Parameter(ParameterSetName = 'FilePath', ValueFromPipelineByPropertyName)]
+        [Parameter(ParameterSetName = 'ShellLink')]
+        [string]$HotKey,
+
+        # Set WindowStyle for shortcut.
+        [Parameter(ParameterSetName = 'FilePath', ValueFromPipelineByPropertyName)]
+        [Parameter(ParameterSetName = 'ShellLink')]
+        [ValidateSet('normal', 'maximized', 'minimized')]
+        [string]$WindowStyle = [WindowStyle]::normal,
+
+        [Parameter(ParameterSetName = 'FilePath', ValueFromPipelineByPropertyName)]
+        [Parameter(ParameterSetName = 'ShellLink')]
+        [string]$AppUserModelID,
+
+        # set if you want to show create shortcut result
+        [switch]$PassThru,
+
+        [switch]$Force
     )
+
     begin {
-        $wsh = New-Object -ComObject Wscript.Shell
+        $extension = '.lnk'
     }
 
-    Process {
-        $Path.ForEach( {
-                $fullPath = Resolve-Path $_
-                Write-Verbose ('Trying to get file properties from "{0}"' -f $fullPath)
-                $wsh.CreateShortcut($fullPath.Path)
-            })
+    process {
+        if ($PSCmdlet.ParameterSetName -eq 'FilePath') {
+            if (-not $Path.EndsWith($extension)) {
+                $Path = $Path + $extension
+            }
+
+            if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+                if ($Force -and $TargetPath) {
+                    New-Shortcut @PSBoundParameters
+                    return
+                }
+                else {
+                    Write-Error -Exception ([System.IO.FileNotFoundException]::new("The file '$Path' does not exists."))
+                    return
+                }
+            }
+        }
+        elseif ($PSCmdlet.ParameterSetName -eq 'ShellLink') {
+            if (-not ($InputObject.FilePath)) {
+                Write-Error -Exception ([System.ArgumentException]::new("The InputObject does not valid."))
+                return
+            }
+        }
+
+        if ($HotKey) {
+            $local:HotKeyCode = ConvertFrom-HotKeyString -HotKey $HotKey -ErrorAction Stop
+        }
+        else {
+            $local:HotKeyCode = 0x0000
+        }
+
+        # Call IShellLink to update Shortcut
+        Write-Verbose ("Updating Shortcut for '{0}'" -f $Path)
+        try {
+            if ($PSCmdlet.ParameterSetName -eq 'FilePath') {
+                $InputObject = New-Object -TypeName ShellLink
+                $InputObject.Load($Path)
+            }
+            elseif ($PSCmdlet.ParameterSetName -eq 'ShellLink') {
+                $Path = $InputObject.FilePath
+            }
+
+            $Shortcut = $InputObject
+            if ($PSBoundParameters.ContainsKey('TargetPath')) {
+                $Shortcut.TargetPath = $TargetPath
+            }
+            if ($PSBoundParameters.ContainsKey('Description')) {
+                $Shortcut.Description = $Description
+            }
+            if ($PSBoundParameters.ContainsKey('WindowStyle')) {
+                $Shortcut.WindowStyle = [int][WindowStyle]$WindowStyle
+            }
+            if ($PSBoundParameters.ContainsKey('Arguments')) {
+                $Shortcut.Arguments = $Arguments
+            }
+            if ($PSBoundParameters.ContainsKey('WorkingDirectory')) {
+                $Shortcut.WorkingDirectory = $WorkingDirectory
+            }
+            if ($PSBoundParameters.ContainsKey('Icon')) {
+                $Shortcut.IconLocation = $Icon
+            }
+            if ($PSBoundParameters.ContainsKey('AppUserModelID')) {
+                $Shortcut.AppUserModelID = $AppUserModelID
+            }
+            if ($PSBoundParameters.ContainsKey('Hotkey')) {
+                $Shortcut.Hotkey = $local:HotKeyCode
+            }
+
+            $Shortcut.Save($Path)
+            Write-Verbose 'Shortcut file updated successfully.'
+        }
+        catch {
+            Write-Error -Exception $_.Exception
+            return
+        }
+        finally {
+            if ($Shortcut -is [System.IDisposable]) {
+                $Shortcut.Dispose()
+                $Shortcut = $null
+            }
+        }
+
+        if ($PassThru) {
+            Get-Item -LiteralPath $Path
+        }
     }
 
-    End {}
+    end {}
 }
 
 
@@ -430,30 +653,148 @@ function Format-HotKeyString {
     [OutputType([string])]
     Param(
         [Parameter(Mandatory, Position = 0)]
-        [string[]]$HotKeyArray
+        [string]$HotKey
     )
 
-    $HotKeyArray = $HotKey.split('+').Trim()
-    if ($HotKeyArray.Count -notin (2..4)) {
+    [string[]]$local:HotKeyArray = $HotKey.split('+').Trim()
+    if ($local:HotKeyArray.Count -notin (2..4)) {
         #最短で修飾+キーの2要素、最長でAlt+Ctrl+Shift+キーの4要素
-        Write-Error ('HotKey is not valid format.')
+        Write-Error 'HotKey is not valid format.'
     }
-    elseif ($HotKeyArray[0] -notmatch '^(Ctrl|Alt|Shift)$') {
+    elseif ($local:HotKeyArray[0] -notmatch '^(Ctrl|Alt|Shift)$') {
         #修飾キーから始まっていないとダメ
-        Write-Error ('HotKey is not valid format.')
+        Write-Error 'HotKey is not valid format.'
     }
     else {
         #優先順位付きソート
-        $sort = $HotKeyArray | ForEach-Object {
+        $local:sort = $local:HotKeyArray | ForEach-Object {
             switch ($_) {
-                'Alt' {1}
-                'Ctrl' {2}
-                'Shift' {3}
-                Default {4}
+                'Alt' { 1 }
+                'Ctrl' { 2 }
+                'Shift' { 3 }
+                Default { 4 }
             }
         }
-        [Array]::Sort($sort, $HotKeyArray)
-        $HotKeyArray -join '+'
+        [Array]::Sort($local:sort, $local:HotKeyArray)
+        $local:HotKeyArray -join '+'
+    }
+}
+
+
+function ConvertFrom-HotKeyString {
+    [CmdletBinding()]
+    [OutputType([uint16])]
+    Param(
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [string]$HotKey
+    )
+
+    begin {
+        [uint16]$HOTKEYF_SHIFT = 0x0100
+        [uint16]$HOTKEYF_CONTROL = 0x0200
+        [uint16]$HOTKEYF_ALT = 0x0400
+        # [uint16]$HOTKEYF_EXT = 0x0800  #?
+
+        Add-Type -AssemblyName System.Windows.Forms
+        $KeysConverter = New-Object -TypeName 'System.Windows.Forms.KeysConverter'
+    }
+
+    Process {
+        [uint16]$local:HotKeyCode = 0x0000
+        $HotKey = Format-HotKeyString -HotKey $HotKey
+        [string[]]$local:HotKeyArray = $HotKey.split('+').Trim()
+
+        switch ($local:HotKeyArray) {
+            'Shift' {
+                $local:HotKeyCode = $local:HotKeyCode -bor $HOTKEYF_SHIFT
+                continue
+            }
+
+            'Ctrl' {
+                $local:HotKeyCode = $local:HotKeyCode -bor $HOTKEYF_CONTROL
+                continue
+            }
+
+            'Alt' {
+                $local:HotKeyCode = $local:HotKeyCode -bor $HOTKEYF_ALT
+                continue
+            }
+
+            Default {
+                try {
+                    $local:HotKeyCode = $local:HotKeyCode -bor $KeysConverter.ConvertFromString($_.ToUpper())
+                }
+                catch [ArgumentException] {
+                    Write-Error 'HotKey is not valid format.'
+                    return
+                }
+                catch {
+                    Write-Error -Exception $_.Exception
+                    return
+                }
+            }
+        }
+
+        $local:HotKeyCode
+    }
+
+    End {
+        $KeysConverter = $null
+    }
+}
+
+
+function ConvertTo-HotKeyString {
+    [CmdletBinding()]
+    [OutputType([string])]
+    Param(
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [uint16]$HotKeyCode
+    )
+
+    begin {
+        [uint16]$HOTKEYF_SHIFT = 0x0100
+        [uint16]$HOTKEYF_CONTROL = 0x0200
+        [uint16]$HOTKEYF_ALT = 0x0400
+        # [uint16]$HOTKEYF_EXT = 0x0800  #?
+
+        Add-Type -AssemblyName System.Windows.Forms
+        $KeysConverter = New-Object -TypeName 'System.Windows.Forms.KeysConverter'
+    }
+
+    Process {
+        if ($HotKeyCode -eq 0x0000) {
+            return [string]::Empty
+        }
+
+        [string[]]$local:HotKeyArray = @()
+
+        # Modifier Keys
+        if ($HotKeyCode -band $HOTKEYF_SHIFT) {
+            $local:HotKeyArray += 'Shift'
+        }
+        if ($HotKeyCode -band $HOTKEYF_CONTROL) {
+            $local:HotKeyArray += 'Ctrl'
+        }
+        if ($HotKeyCode -band $HOTKEYF_ALT) {
+            $local:HotKeyArray += 'Alt'
+        }
+
+        # Key
+        try {
+            $local:HotKeyArray += $KeysConverter.ConvertToString($HotKeyCode -band 0x00ff)
+        }
+        catch {
+            Write-Error -Exception $_.Exception
+            return
+        }
+
+        # return formatted string
+        Format-HotKeyString -HotKey ([string]::Join('+', $local:HotKeyArray))
+    }
+
+    End {
+        $KeysConverter = $null
     }
 }
 
