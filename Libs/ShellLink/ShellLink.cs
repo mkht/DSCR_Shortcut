@@ -202,6 +202,8 @@ public class ShellLink : IDisposable {
     private const int STGM_READ = 0x00000000;
     private const int STGM_READWRITE = 0x00000002;
     private const uint SLGP_UNCPRIORITY = 0x0002;
+    private const uint SLGP_RAWPATH = 0x0004;
+
 
     private IPersistFile PersistFile {
         get {
@@ -242,7 +244,7 @@ public class ShellLink : IDisposable {
             StringBuilder targetPath = new StringBuilder (MAX_PATH);
             WIN32_FIND_DATAW data = new WIN32_FIND_DATAW ();
 
-            VerifySucceeded (shellLinkW.GetPath (targetPath, targetPath.Capacity, ref data, SLGP_UNCPRIORITY));
+            VerifySucceeded (shellLinkW.GetPath (targetPath, targetPath.Capacity, ref data, SLGP_RAWPATH));
             return targetPath.ToString ();
         }
         set {
