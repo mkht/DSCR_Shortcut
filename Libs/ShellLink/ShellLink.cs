@@ -180,7 +180,13 @@ public class ShellLink : IDisposable {
     }
 
     [DllImport ("Ole32.dll", PreserveSig = false)]
-    private extern static void PropVariantClear ([In, Out] PropVariant pvar);
+    private static extern void PropVariantClear ([In, Out] PropVariant pvar);
+
+    [DllImport("Shell32.dll", CharSet = CharSet.Unicode, PreserveSig = false)]
+    private static extern void SHGetNameFromIDList(IntPtr pidl, uint sigdnName, [Out, MarshalAs(UnmanagedType.LPTStr)] out string ppszName);
+
+    [DllImport("Shell32.dll")]
+    private static extern void ILFree(IntPtr pidl);
 
     #endregion
 
@@ -203,6 +209,8 @@ public class ShellLink : IDisposable {
     private const int STGM_READWRITE = 0x00000002;
     private const uint SLGP_UNCPRIORITY = 0x0002;
     private const uint SLGP_RAWPATH = 0x0004;
+
+    private const uint SIGDN_DESKTOPABSOLUTEPARSING = 0x80028000;
 
 
     private IPersistFile PersistFile {
@@ -249,6 +257,23 @@ public class ShellLink : IDisposable {
         }
         set {
             VerifySucceeded (shellLinkW.SetPath (value));
+        }
+    }
+
+    // Shell item id list
+    public string IDList {
+        get {
+            string idList;
+            System.IntPtr pidl = IntPtr.Zero;
+
+            try{
+                VerifySucceeded (shellLinkW.GetIDList (out pidl));
+                SHGetNameFromIDList(pidl, SIGDN_DESKTOPABSOLUTEPARSING, out idList);
+                return idList;
+            }
+            finally{
+                ILFree(pidl);
+            }
         }
     }
 
