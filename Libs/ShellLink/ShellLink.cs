@@ -571,7 +571,7 @@ public class ShellLink : IDisposable
     }
 
     // Verify if operation succeeded.
-    public static void VerifySucceeded(uint hresult)
+    private static void VerifySucceeded(uint hresult)
     {
         if (hresult > 1)
             throw new InvalidOperationException("Failed with HRESULT: " +
