@@ -151,23 +151,24 @@ function Set-TargetResource {
         [string]$AppUserModelID
     )
 
+    $arg = [HashTable]$PSBoundParameters
+
     if (-not $Path.EndsWith('.lnk')) {
         Write-Verbose ("File extension is not 'lnk'. Automatically add extension")
-        $Path = $Path + '.lnk'
+        $arg.Path = $Path + '.lnk'
     }
 
     if ($Icon -and ($Icon -notmatch ',\d+$')) {
-        $Icon = $Icon + ',0'
+        $arg.Icon = $Icon + ',0'
     }
 
     # Ensure = "Absent"
     if ($Ensure -eq [Ensure]::Absent) {
-        Write-Verbose ('Remove shortcut file "{0}"' -f $Path)
-        Remove-Item -LiteralPath $Path -Force
+        Write-Verbose ('Remove shortcut file "{0}"' -f $arg.Path)
+        Remove-Item -LiteralPath $arg.Path -Force
     }
     else {
         # Ensure = "Present"
-        $arg = $PSBoundParameters
         $null = $arg.Remove('Ensure')
         Update-Shortcut @arg -Force
     }
