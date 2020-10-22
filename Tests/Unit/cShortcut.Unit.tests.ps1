@@ -481,6 +481,12 @@ InModuleScope 'cShortcut' {
             Assert-MockCalled -CommandName 'Format-HotKeyString' -Times 1 -Exactly -Scope It
         }
 
+        It 'Returns correct value. (Ctrl+Alt+@)' {
+            $HotKey = 'Ctrl+Alt+@'
+            ConvertFrom-HotKeyString -HotKey $HotKey | Should -Be 0x06c0
+            Assert-MockCalled -CommandName 'Format-HotKeyString' -Times 1 -Exactly -Scope It
+        }
+
         It 'Throw exception if the keycode is not valid. (Ctrl+F999)' {
             $HotKey = 'Ctrl+F999'
             { ConvertFrom-HotKeyString -HotKey $HotKey } | Should -Throw
@@ -498,6 +504,12 @@ InModuleScope 'cShortcut' {
 
         Mock Format-HotKeyString { return $HotKey }
 
+        It 'Returns empty string if an input code is 0' {
+            $HotKeyCode = 0
+            ConvertTo-HotKeyString -HotKeyCode $HotKeyCode | Should -BeNullOrEmpty
+            Assert-MockCalled -CommandName 'Format-HotKeyString' -Times 0 -Exactly -Scope It
+        }
+
         It 'Returns correct string. (Alt+F12)' {
             $HotKeyCode = 0x047b
             ConvertTo-HotKeyString -HotKeyCode $HotKeyCode | Should -BeExactly 'Alt+F12'
@@ -507,6 +519,12 @@ InModuleScope 'cShortcut' {
         It 'Returns correct string. (F9)' {
             $HotKeyCode = 0x0078
             ConvertTo-HotKeyString -HotKeyCode $HotKeyCode | Should -BeExactly 'F9'
+            Assert-MockCalled -CommandName 'Format-HotKeyString' -Times 1 -Exactly -Scope It
+        }
+
+        It 'Returns correct value. (Ctrl+Alt+@)' {
+            $HotKeyCode = 0x06c0
+            ConvertTo-HotKeyString -HotKeyCode $HotKeyCode | Should -BeExactly 'Ctrl+Alt+@'
             Assert-MockCalled -CommandName 'Format-HotKeyString' -Times 1 -Exactly -Scope It
         }
     }

@@ -4,6 +4,12 @@ if (Test-Path -LiteralPath $ShellLinkPath -PathType Leaf) {
     Add-Type -TypeDefinition (Get-Content -LiteralPath $ShellLinkPath -Raw -Encoding UTF8) -Language 'CSharp' -ErrorAction Stop
 }
 
+# Import VKeyUtil class
+$VKeyUtilPath = Join-Path $PSScriptRoot '..\..\Libs\VKeyUtil\VKeyUtil.cs'
+if (Test-Path -LiteralPath $VKeyUtilPath -PathType Leaf) {
+    Add-Type -TypeDefinition (Get-Content -LiteralPath $VKeyUtilPath -Raw -Encoding UTF8) -Language 'CSharp' -ErrorAction Stop -ReferencedAssemblies System.Windows.Forms
+}
+
 Enum Ensure {
     Absent
     Present
@@ -722,16 +728,27 @@ function ConvertFrom-HotKeyString {
             }
 
             Default {
+                $local:KeyString = $_
+                $local:KeyCode = $null
                 try {
-                    $local:HotKeyCode = $local:HotKeyCode -bor $KeysConverter.ConvertFromString($_.ToUpper())
+                    $local:KeyCode = $KeysConverter.ConvertFromString($local:KeyString.ToUpper())
                 }
                 catch [ArgumentException] {
-                    Write-Error 'HotKey is not valid format.'
-                    return
+                    try {
+                        $local:KeyCode = [VKeyUtil]::GetKeyCodeFromChar($local:KeyString) -band 0x00ff
+                    }
+                    catch {
+                        Write-Error 'HotKey is not valid format.'
+                        return
+                    }
                 }
                 catch {
                     Write-Error -Exception $_.Exception
                     return
+                }
+
+                if ($null -ne $local:KeyCode) {
+                    $local:HotKeyCode = $local:HotKeyCode -bor $local:KeyCode
                 }
             }
         }
@@ -782,16 +799,27 @@ function ConvertTo-HotKeyString {
         }
 
         # Key
-        try {
-            $local:HotKeyArray += $KeysConverter.ConvertToString($HotKeyCode -band 0x00ff)
-        }
-        catch {
-            Write-Error -Exception $_.Exception
-            return
+        [string]$local:Key = $null
+        try { $local:Key = [VKeyUtil]::GetCharsFromKeys($HotKeyCode -band 0x00ff) } catch {}
+
+        if ([string]::IsNullOrWhiteSpace($local:Key)) {
+            try {
+                $local:Key = $KeysConverter.ConvertToString($HotKeyCode -band 0x00ff)
+            }
+            catch {
+                Write-Error -Exception $_.Exception
+                return
+            }
         }
 
-        # return formatted string
-        Format-HotKeyString -HotKey ([string]::Join('+', $local:HotKeyArray))
+        if (-not [string]::IsNullOrWhiteSpace($local:Key)) {
+            $local:HotKeyArray += $local:Key.ToUpper()
+            # return formatted string
+            Format-HotKeyString -HotKey ([string]::Join('+', $local:HotKeyArray))
+        }
+        else {
+            [string]::Empty
+        }
     }
 
     End {
