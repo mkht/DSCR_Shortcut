@@ -664,27 +664,32 @@ function Format-HotKeyString {
     )
 
     [string[]]$local:HotKeyArray = $HotKey.split('+').Trim()
-    if ($local:HotKeyArray.Count -notin (2..4)) {
+
+    if ($local:HotKeyArray.Count -eq 1 -and $local:HotKeyArray[0] -match '^F([1-9]|1[0-9]|2[0-4])$') {
+        # F1～F24は修飾キーを伴わず単体でもOK
+    }
+    elseif ($local:HotKeyArray.Count -notin (2..4)) {
         #最短で修飾+キーの2要素、最長でAlt+Ctrl+Shift+キーの4要素
         Write-Error 'HotKey is not valid format.'
+        return [string]::Empty
     }
     elseif ($local:HotKeyArray[0] -notmatch '^(Ctrl|Alt|Shift)$') {
         #修飾キーから始まっていないとダメ
         Write-Error 'HotKey is not valid format.'
+        return [string]::Empty
     }
-    else {
-        #優先順位付きソート
-        $local:sort = $local:HotKeyArray | ForEach-Object {
-            switch ($_) {
-                'Ctrl' { 1 }
-                'Shift' { 2 }
-                'Alt' { 3 }
-                Default { 4 }
-            }
+
+    #優先順位付きソート
+    $local:sort = $local:HotKeyArray | ForEach-Object {
+        switch ($_) {
+            'Ctrl' { 1 }
+            'Shift' { 2 }
+            'Alt' { 3 }
+            Default { 4 }
         }
-        [Array]::Sort($local:sort, $local:HotKeyArray)
-        $local:HotKeyArray -join '+'
     }
+    [Array]::Sort($local:sort, $local:HotKeyArray)
+    $local:HotKeyArray -join '+'
 }
 
 

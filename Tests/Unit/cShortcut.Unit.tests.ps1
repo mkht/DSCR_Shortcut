@@ -409,18 +409,40 @@ InModuleScope 'cShortcut' {
             $ErrorActionPreference = 'Stop'
         }
 
-        It 'Throw error if input string has less than 2 elements' {
+        It 'Throw error if input string has less than 2 elements. (except Function keys)' {
             $HotKey = 'Ctrl'
             { Format-HotKeyString -HotKey $HotKey } | Should -Throw
-        }
 
-        It 'Throw error if input string has more than 5 elements' {
-            $HotKey = ('Ctrl', 'Shift', 'Alt', 'A', 'B') -join '+'
+            $HotKey = 'F'
             { Format-HotKeyString -HotKey $HotKey } | Should -Throw
         }
 
-        It 'Throw error if the first element of an input is not modifier' {
+        It 'Throw error if input string has more than 5 elements.' {
+            $HotKey = ('Ctrl', 'Shift', 'Alt', 'A', 'F8') -join '+'
+            { Format-HotKeyString -HotKey $HotKey } | Should -Throw
+        }
+
+        It 'Throw error if the first element of an input is not modifier.  (except Function keys)' {
             $HotKey = ('A', 'Shift') -join '+'
+            { Format-HotKeyString -HotKey $HotKey } | Should -Throw
+        }
+
+        It 'Accept single element if it is Function Keys. (F1 to F24)' {
+            $HotKey = 'F1'
+            Format-HotKeyString -HotKey $HotKey | Should -BeExactly 'F1'
+
+            $HotKey = 'F10'
+            Format-HotKeyString -HotKey $HotKey | Should -BeExactly 'F10'
+
+            $HotKey = 'F24'
+            Format-HotKeyString -HotKey $HotKey | Should -BeExactly 'F24'
+        }
+
+        It 'Throw error if the specified F-Keys out of range. (F0 and F25)' {
+            $HotKey = 'F0'
+            { Format-HotKeyString -HotKey $HotKey } | Should -Throw
+
+            $HotKey = 'F25'
             { Format-HotKeyString -HotKey $HotKey } | Should -Throw
         }
 
