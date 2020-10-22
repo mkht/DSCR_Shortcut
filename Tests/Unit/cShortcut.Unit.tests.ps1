@@ -400,5 +400,116 @@ InModuleScope 'cShortcut' {
         }
     }
     #endregion Tests for Set-TargetResource
+
+
+    #region Tests for Format-HotKeyString
+    Describe 'cShortcut/Format-HotKeyString' -Tag 'Unit' {
+
+        BeforeAll {
+            $ErrorActionPreference = 'Stop'
+        }
+
+        It 'Throw error if input string has less than 2 elements' {
+            $HotKey = 'Ctrl'
+            { Format-HotKeyString -HotKey $HotKey } | Should -Throw
+        }
+
+        It 'Throw error if input string has more than 5 elements' {
+            $HotKey = ('Ctrl', 'Shift', 'Alt', 'A', 'B') -join '+'
+            { Format-HotKeyString -HotKey $HotKey } | Should -Throw
+        }
+
+        It 'Throw error if the first element of an input is not modifier' {
+            $HotKey = ('A', 'Shift') -join '+'
+            { Format-HotKeyString -HotKey $HotKey } | Should -Throw
+        }
+
+        It 'Returns correct formatted string' {
+            $HotKey = ('Alt', 'F12') -join '+'
+            Format-HotKeyString -HotKey $HotKey | Should -BeExactly 'Alt+F12'
+
+            $HotKey = ('Ctrl', 'F12') -join '+'
+            Format-HotKeyString -HotKey $HotKey | Should -BeExactly 'Ctrl+F12'
+
+            $HotKey = ('Alt', 'Ctrl', 'F12') -join '+'
+            Format-HotKeyString -HotKey $HotKey | Should -BeExactly 'Alt+Ctrl+F12'
+
+            $HotKey = ('Alt', 'Ctrl', 'Shift', 'F12') -join '+'
+            Format-HotKeyString -HotKey $HotKey | Should -BeExactly 'Alt+Ctrl+Shift+F12'
+        }
+
+        It 'Returns correct formatted string with priority sorting' {
+            $HotKey = ('Shift', 'Ctrl', 'Alt', 'F12') -join '+'
+            Format-HotKeyString -HotKey $HotKey | Should -BeExactly 'Alt+Ctrl+Shift+F12'
+
+            $HotKey = ('Shift', 'F12', 'Alt', 'Ctrl') -join '+'
+            Format-HotKeyString -HotKey $HotKey | Should -BeExactly 'Alt+Ctrl+Shift+F12'
+        }
+
+        It 'Ignore casing' {
+            $HotKey = ('aLt', 'cTrL', 'SHIFT', 'f12') -join '+'
+            Format-HotKeyString -HotKey $HotKey | Should -BeExactly 'aLt+cTrL+SHIFT+f12'
+        }
+
+        It 'Trim whitespaces' {
+            $HotKey = ('  Shift', '   Ctrl', '   Alt   ', 'F12   ') -join '+'
+            Format-HotKeyString -HotKey $HotKey | Should -BeExactly 'Alt+Ctrl+Shift+F12'
+        }
+    }
+    #endregion Tests for Format-HotKeyString
+
+
+
+    #region Tests for ConvertFrom-HotKeyString
+    Describe 'cShortcut/ConvertFrom-HotKeyString' -Tag 'Unit' {
+
+        BeforeAll {
+            $ErrorActionPreference = 'Stop'
+        }
+
+        Mock Format-HotKeyString { return $HotKey }
+
+        It 'Returns correct value. (Alt+F12)' {
+            $HotKey = ('Alt', 'F12') -join '+'
+            ConvertFrom-HotKeyString -HotKey $HotKey | Should -Be 0x047b
+            Assert-MockCalled -CommandName 'Format-HotKeyString' -Times 1 -Exactly -Scope It
+        }
+
+        It 'Returns correct value. (Ctrl+Shift+F9)' {
+            $HotKey = 'Ctrl+Shift+F9'
+            ConvertFrom-HotKeyString -HotKey $HotKey | Should -Be 0x0378
+            Assert-MockCalled -CommandName 'Format-HotKeyString' -Times 1 -Exactly -Scope It
+        }
+
+        It 'Throw exception if the keycode is not valid. (Ctrl+F999)' {
+            $HotKey = 'Ctrl+F999'
+            { ConvertFrom-HotKeyString -HotKey $HotKey } | Should -Throw
+            Assert-MockCalled -CommandName 'Format-HotKeyString' -Times 1 -Exactly -Scope It
+        }
+    }
+    #endregion Tests for ConvertFrom-HotKeyString
+
+    #region Tests for ConvertTo-HotKeyString
+    Describe 'cShortcut/ConvertTo-HotKeyString' -Tag 'Unit' {
+
+        BeforeAll {
+            $ErrorActionPreference = 'Stop'
+        }
+
+        Mock Format-HotKeyString { return $HotKey }
+
+        It 'Returns correct string. (Alt+F12)' {
+            $HotKeyCode = 0x047b
+            ConvertTo-HotKeyString -HotKeyCode $HotKeyCode | Should -BeExactly 'Alt+F12'
+            Assert-MockCalled -CommandName 'Format-HotKeyString' -Times 1 -Exactly -Scope It
+        }
+
+        It 'Returns correct string. (F9)' {
+            $HotKeyCode = 0x0078
+            ConvertTo-HotKeyString -HotKeyCode $HotKeyCode | Should -BeExactly 'F9'
+            Assert-MockCalled -CommandName 'Format-HotKeyString' -Times 1 -Exactly -Scope It
+        }
+    }
+    #endregion Tests for ConvertTo-HotKeyString
 }
 #endregion End Testing
