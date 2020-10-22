@@ -670,9 +670,9 @@ function Format-HotKeyString {
         #優先順位付きソート
         $local:sort = $local:HotKeyArray | ForEach-Object {
             switch ($_) {
-                'Alt' { 1 }
-                'Ctrl' { 2 }
-                'Shift' { 3 }
+                'Ctrl' { 1 }
+                'Shift' { 2 }
+                'Alt' { 3 }
                 Default { 4 }
             }
         }

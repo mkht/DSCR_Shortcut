@@ -431,29 +431,29 @@ InModuleScope 'cShortcut' {
             $HotKey = ('Ctrl', 'F12') -join '+'
             Format-HotKeyString -HotKey $HotKey | Should -BeExactly 'Ctrl+F12'
 
-            $HotKey = ('Alt', 'Ctrl', 'F12') -join '+'
-            Format-HotKeyString -HotKey $HotKey | Should -BeExactly 'Alt+Ctrl+F12'
+            $HotKey = ('Ctrl', 'Alt', 'F12') -join '+'
+            Format-HotKeyString -HotKey $HotKey | Should -BeExactly 'Ctrl+Alt+F12'
 
-            $HotKey = ('Alt', 'Ctrl', 'Shift', 'F12') -join '+'
-            Format-HotKeyString -HotKey $HotKey | Should -BeExactly 'Alt+Ctrl+Shift+F12'
+            $HotKey = ('Ctrl', 'Shift', 'Alt', 'F12') -join '+'
+            Format-HotKeyString -HotKey $HotKey | Should -BeExactly 'Ctrl+Shift+Alt+F12'
         }
 
         It 'Returns correct formatted string with priority sorting' {
             $HotKey = ('Shift', 'Ctrl', 'Alt', 'F12') -join '+'
-            Format-HotKeyString -HotKey $HotKey | Should -BeExactly 'Alt+Ctrl+Shift+F12'
+            Format-HotKeyString -HotKey $HotKey | Should -BeExactly 'Ctrl+Shift+Alt+F12'
 
             $HotKey = ('Shift', 'F12', 'Alt', 'Ctrl') -join '+'
-            Format-HotKeyString -HotKey $HotKey | Should -BeExactly 'Alt+Ctrl+Shift+F12'
+            Format-HotKeyString -HotKey $HotKey | Should -BeExactly 'Ctrl+Shift+Alt+F12'
         }
 
         It 'Ignore casing' {
-            $HotKey = ('aLt', 'cTrL', 'SHIFT', 'f12') -join '+'
-            Format-HotKeyString -HotKey $HotKey | Should -BeExactly 'aLt+cTrL+SHIFT+f12'
+            $HotKey = ('cTrL', 'SHIFT', 'aLt', 'f12') -join '+'
+            Format-HotKeyString -HotKey $HotKey | Should -BeExactly 'cTrL+SHIFT+aLt+f12'
         }
 
         It 'Trim whitespaces' {
-            $HotKey = ('  Shift', '   Ctrl', '   Alt   ', 'F12   ') -join '+'
-            Format-HotKeyString -HotKey $HotKey | Should -BeExactly 'Alt+Ctrl+Shift+F12'
+            $HotKey = ('  Ctrl', '   Shift', '   Alt   ', 'F12   ') -join '+'
+            Format-HotKeyString -HotKey $HotKey | Should -BeExactly 'Ctrl+Shift+Alt+F12'
         }
     }
     #endregion Tests for Format-HotKeyString
