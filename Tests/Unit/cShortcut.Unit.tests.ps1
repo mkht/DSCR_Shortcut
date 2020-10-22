@@ -523,9 +523,15 @@ InModuleScope 'cShortcut' {
         }
 
         It 'Returns correct value. (Ctrl+Alt+@)' {
-            $HotKeyCode = 0x06c0
-            ConvertTo-HotKeyString -HotKeyCode $HotKeyCode | Should -BeExactly 'Ctrl+Alt+@'
-            Assert-MockCalled -CommandName 'Format-HotKeyString' -Times 1 -Exactly -Scope It
+            # This test depends on the current keyboard layout.
+            if ((Get-Culture).KeyboardLayoutID -ne 1041) {
+                Set-ItResult -Skipped
+            }
+            else {
+                $HotKeyCode = 0x06c0
+                ConvertTo-HotKeyString -HotKeyCode $HotKeyCode | Should -BeExactly 'Ctrl+Alt+@'
+                Assert-MockCalled -CommandName 'Format-HotKeyString' -Times 1 -Exactly -Scope It
+            }
         }
     }
     #endregion Tests for ConvertTo-HotKeyString
