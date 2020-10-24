@@ -410,6 +410,52 @@ InModuleScope 'cShortcut' {
     }
     #endregion Tests for Set-TargetResource
 
+    #region Tests for Get-Shortcut
+    Describe 'cShortcut/Get-Shortcut' -Tag 'Unit' {
+
+        BeforeAll {
+            $ErrorActionPreference = 'Stop'
+            Get-ChildItem $global:TestData | Copy-Item -Destination $TestDrive -Force -Recurse
+        }
+
+        It 'Get correct properties from existence shortcut file.' {
+            $LnkFile = Join-Path $TestDrive 'NotePad.lnk'
+            try {
+                $Shortcut = Get-Shortcut -Path $LnkFile
+                $Shortcut.GetType().FullName | Should -Be 'ShellLink'
+                $Shortcut.TargetPath | Should -BeExactly '%windir%\system32\notepad.exe'
+                $Shortcut.Description | Should -BeExactly '基本的なテキストの形式を使ったテキスト ファイルの表示と編集ができます。'
+                $Shortcut.Arguments | Should -BeExactly 'C:\test.txt'
+                $Shortcut.WorkingDirectory | Should -BeExactly '%HOMEDRIVE%%HOMEPATH%'
+                $Shortcut.WindowStyle | Should -Be 3
+                $Shortcut.Hotkey | Should -Be 0x0641
+                $Shortcut.AppUserModelID | Should -BeExactly 'System.NotePad'
+            }
+            finally {
+                if ($Shortcut -is [IDisposable]) {
+                    $Shortcut.Dispose()
+                    $Shortcut = $null
+                }
+            }
+        }
+
+        It 'Load shortcut file as Read Only' {
+            $LnkFile = Join-Path $TestDrive 'NotePad.lnk'
+            try {
+                $Shortcut = Get-Shortcut -Path $LnkFile -ReadOnly
+                $Shortcut.GetType().FullName | Should -Be 'ShellLink'
+                { $Shortcut.TargetPath = 'C:\Windows\System32\HOSTNAME.EXE' } | Should -Throw
+            }
+            finally {
+                if ($Shortcut -is [IDisposable]) {
+                    $Shortcut.Dispose()
+                    $Shortcut = $null
+                }
+            }
+        }
+    }
+    # #endregion Tests for Get-Shortcut
+
 
     #region Tests for Format-HotKeyString
     Describe 'cShortcut/Format-HotKeyString' -Tag 'Unit' {
