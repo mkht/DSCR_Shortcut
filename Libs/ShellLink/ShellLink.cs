@@ -210,6 +210,8 @@ public class ShellLink : IDisposable
 
     private IShellLinkW shellLinkW = null;
 
+    private bool readOnly = false;
+
     private readonly PropertyKey AppUserModelIDKey =
         new PropertyKey("{9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3}", 5);
 
@@ -281,6 +283,7 @@ public class ShellLink : IDisposable
         }
         set
         {
+            VerifyReadOnly();
             VerifySucceeded(shellLinkW.SetPath(value));
         }
     }
@@ -318,6 +321,7 @@ public class ShellLink : IDisposable
         }
         set
         {
+            VerifyReadOnly();
             VerifySucceeded(shellLinkW.SetDescription(value));
         }
     }
@@ -334,6 +338,7 @@ public class ShellLink : IDisposable
         }
         set
         {
+            VerifyReadOnly();
             VerifySucceeded(shellLinkW.SetArguments(value));
         }
     }
@@ -350,6 +355,7 @@ public class ShellLink : IDisposable
         }
         set
         {
+            VerifyReadOnly();
             VerifySucceeded(shellLinkW.SetWorkingDirectory(value));
         }
     }
@@ -368,6 +374,8 @@ public class ShellLink : IDisposable
         }
         set
         {
+            VerifyReadOnly();
+
             int idx = value.LastIndexOf(",");
             string iconLocation;
             string strIdx;
@@ -420,8 +428,9 @@ public class ShellLink : IDisposable
         }
         set
         {
-            int windowStyle;
+            VerifyReadOnly();
 
+            int windowStyle;
             switch (value)
             {
                 case 0:
@@ -456,6 +465,7 @@ public class ShellLink : IDisposable
         }
         set
         {
+            VerifyReadOnly();
             VerifySucceeded(shellLinkW.SetHotKey(value));
         }
     }
@@ -478,6 +488,7 @@ public class ShellLink : IDisposable
         }
         set
         {
+            VerifyReadOnly();
             using (PropVariant pv = new PropVariant(value))
             {
                 VerifySucceeded(PropertyStore.SetValue(AppUserModelIDKey, pv));
@@ -540,8 +551,9 @@ public class ShellLink : IDisposable
     // Save shortcut file.
     public void Save()
     {
-        string file = FilePath;
+        VerifyReadOnly();
 
+        string file = FilePath;
         if (file == null)
             throw new InvalidOperationException("File name is not given.");
         else
@@ -551,9 +563,14 @@ public class ShellLink : IDisposable
     public void Save(string file)
     {
         if (file == null)
+        {
             throw new ArgumentNullException("File name is required.");
+        }
         else
+        {
+            VerifyReadOnly();
             PersistFile.Save(file, true);
+        }
     }
 
     // Load shortcut file.
@@ -565,9 +582,15 @@ public class ShellLink : IDisposable
     public void Load(string file, int flags)
     {
         if (!File.Exists(file))
+        {
             throw new FileNotFoundException("File is not found.", file);
+        }
         else
+        {
             PersistFile.Load(file, flags);
+            if ((flags & 0x0000000f) == 0)
+                readOnly = true;
+        }
     }
 
     // Verify if operation succeeded.
@@ -576,6 +599,13 @@ public class ShellLink : IDisposable
         if (hresult > 1)
             throw new InvalidOperationException("Failed with HRESULT: " +
                 hresult.ToString("X"));
+    }
+
+    // Verify if operation as read only.
+    private void VerifyReadOnly()
+    {
+        if (readOnly)
+            throw new UnauthorizedAccessException("This object is read-only.");
     }
 
     #endregion
