@@ -189,6 +189,7 @@ InModuleScope 'cShortcut' {
                     Description      = 'Mock_Description'
                     Icon             = 'Mock_IconLocation,0'
                     HotKey           = 'Shift+B'
+                    HotKeyCode       = 0x0142
                     WindowStyle      = 'maximized'
                     AppUserModelID   = 'Mock_AppUserModelID'
                 }
@@ -196,6 +197,8 @@ InModuleScope 'cShortcut' {
 
             Mock Format-HotKeyString { return 'Shift+A' } -ParameterFilter { $HotKey -eq 'Shift+A' }
             Mock Format-HotKeyString { return 'Shift+B' } -ParameterFilter { $HotKey -eq 'Shift+B' }
+            Mock ConvertFrom-HotKeyString { return 0x0141 } -ParameterFilter { $HotKey -eq 'Shift+A' }
+            Mock ConvertFrom-HotKeyString { return 0x0142 } -ParameterFilter { $HotKey -eq 'Shift+B' }
 
             It 'Return $true when the Ensure is Present and match all specified properties (single property)' {
                 $PathExists = Join-Path $TestDrive '\Exist\shortcut.lnk'
@@ -212,6 +215,7 @@ InModuleScope 'cShortcut' {
                 Test-TargetResource @testParam | Should -Be $true
                 Assert-MockCalled -CommandName 'Get-TargetResource' -Exactly -Times 1 -Scope It
                 Assert-MockCalled -CommandName 'Format-HotKeyString' -Exactly -Times 0 -Scope It
+                Assert-MockCalled -CommandName 'ConvertFrom-HotKeyString' -Exactly -Times 0 -Scope It
             }
 
             It 'Return $true when the Ensure is Present and match all specified properties (two properties)' {
@@ -230,6 +234,7 @@ InModuleScope 'cShortcut' {
                 Test-TargetResource @testParam | Should -Be $true
                 Assert-MockCalled -CommandName 'Get-TargetResource' -Exactly -Times 1 -Scope It
                 Assert-MockCalled -CommandName 'Format-HotKeyString' -Exactly -Times 0 -Scope It
+                Assert-MockCalled -CommandName 'ConvertFrom-HotKeyString' -Exactly -Times 0 -Scope It
             }
 
             It 'Return $true when the Ensure is Present and match all specified properties (all properties)' {
@@ -253,7 +258,8 @@ InModuleScope 'cShortcut' {
 
                 Test-TargetResource @testParam | Should -Be $true
                 Assert-MockCalled -CommandName 'Get-TargetResource' -Exactly -Times 1 -Scope It
-                Assert-MockCalled -CommandName 'Format-HotKeyString' -Exactly -Times 1 -Scope It -ParameterFilter { $HotKey -eq 'Shift+B' }
+                Assert-MockCalled -CommandName 'Format-HotKeyString' -Exactly -Times 0 -Scope It -ParameterFilter { $HotKey -eq 'Shift+B' }
+                Assert-MockCalled -CommandName 'ConvertFrom-HotKeyString' -Exactly -Times 1 -Scope It -ParameterFilter { $HotKey -eq 'Shift+B' }
             }
 
             It 'Return $false when the Ensure is Present and does not match some specified properties (single property)' {
@@ -271,6 +277,7 @@ InModuleScope 'cShortcut' {
                 Test-TargetResource @testParam | Should -Be $false
                 Assert-MockCalled -CommandName 'Get-TargetResource' -Exactly -Times 1 -Scope It
                 Assert-MockCalled -CommandName 'Format-HotKeyString' -Exactly -Times 0 -Scope It
+                Assert-MockCalled -CommandName 'ConvertFrom-HotKeyString' -Exactly -Times 0 -Scope It
             }
 
             It 'Return $false when the Ensure is Present and does not match some specified properties (two properties specified, one match, one does not.)' {
@@ -289,6 +296,7 @@ InModuleScope 'cShortcut' {
                 Test-TargetResource @testParam | Should -Be $false
                 Assert-MockCalled -CommandName 'Get-TargetResource' -Exactly -Times 1 -Scope It
                 Assert-MockCalled -CommandName 'Format-HotKeyString' -Exactly -Times 0 -Scope It
+                Assert-MockCalled -CommandName 'ConvertFrom-HotKeyString' -Exactly -Times 0 -Scope It
             }
 
             It 'Return $false when the Ensure is Present and does not match some specified properties (all properties specified, only one does not match.)' {
@@ -312,7 +320,8 @@ InModuleScope 'cShortcut' {
 
                 Test-TargetResource @testParam | Should -Be $false
                 Assert-MockCalled -CommandName 'Get-TargetResource' -Exactly -Times 1 -Scope It
-                Assert-MockCalled -CommandName 'Format-HotKeyString' -Exactly -Times 1 -Scope It -ParameterFilter { $HotKey -eq 'Shift+A' }
+                Assert-MockCalled -CommandName 'Format-HotKeyString' -Exactly -Times 0 -Scope It -ParameterFilter { $HotKey -eq 'Shift+A' }
+                Assert-MockCalled -CommandName 'ConvertFrom-HotKeyString' -Exactly -Times 1 -Scope It -ParameterFilter { $HotKey -eq 'Shift+A' }
             }
         }
     }
@@ -446,6 +455,14 @@ InModuleScope 'cShortcut' {
             { Format-HotKeyString -HotKey $HotKey } | Should -Throw
         }
 
+        It 'Returns empty string if an input is empty or white spaces string.' {
+            $HotKey = [string]::Empty
+            Format-HotKeyString -HotKey $HotKey | Should -BeExactly ''
+
+            $HotKey = '      '
+            Format-HotKeyString -HotKey $HotKey | Should -BeExactly ''
+        }
+
         It 'Returns correct formatted string' {
             $HotKey = ('Alt', 'F12') -join '+'
             Format-HotKeyString -HotKey $HotKey | Should -BeExactly 'Alt+F12'
@@ -490,6 +507,12 @@ InModuleScope 'cShortcut' {
         }
 
         Mock Format-HotKeyString { return $HotKey }
+
+        It 'Returns 0x0000 if the input is empty.' {
+            $HotKey = [string]::Empty
+            ConvertFrom-HotKeyString -HotKey $HotKey | Should -Be 0x0000
+            Assert-MockCalled -CommandName 'Format-HotKeyString' -Times 0 -Exactly -Scope It
+        }
 
         It 'Returns correct value. (Alt+F12)' {
             $HotKey = ('Alt', 'F12') -join '+'

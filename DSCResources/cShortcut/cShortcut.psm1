@@ -60,6 +60,10 @@ function Get-TargetResource {
         [string]
         $HotKey,
 
+        [Parameter()]
+        [uint16]
+        $HotKeyCode = 0x0000,
+
         [ValidateSet('normal', 'maximized', 'minimized')]
         [string]
         $WindowStyle = [WindowStyle]::normal,
@@ -93,6 +97,7 @@ function Get-TargetResource {
             Description      = $Shortcut.Description
             Icon             = $Shortcut.IconLocation
             HotKey           = ConvertTo-HotKeyString -HotKeyCode $Shortcut.Hotkey
+            HotKeyCode       = $Shortcut.Hotkey
             WindowStyle      = [WindowStyle]::undefined
             AppUserModelID   = $Shortcut.AppUserModelID
         }
@@ -148,6 +153,10 @@ function Set-TargetResource {
         [Parameter()]
         [string]
         $HotKey,
+
+        [Parameter()]
+        [uint16]
+        $HotKeyCode = 0x0000,
 
         [ValidateSet('normal', 'maximized', 'minimized')]
         [string]
@@ -220,6 +229,10 @@ function Test-TargetResource {
         [string]
         $HotKey,
 
+        [Parameter()]
+        [uint16]
+        $HotKeyCode = 0x0000,
+
         [ValidateSet('normal', 'maximized', 'minimized')]
         [string]
         $WindowStyle = [WindowStyle]::normal,
@@ -248,12 +261,14 @@ function Test-TargetResource {
         $Icon = $Icon + ',0'
     }
 
-    # HotKey文字列組み立て
+    # HotKey文字列からHotKeyCode（数値表現）を取得
     if ($HotKey) {
-        $HotKeyStr = Format-HotKeyString $HotKey
+        # $HotKeyStr = Format-HotKeyString $HotKey
+        $HotKeyCode = ConvertFrom-HotKeyString -HotKey $HotKey
     }
     else {
-        $HotKeyStr = [string]::Empty
+        # $HotKeyStr = [string]::Empty
+        $HotKeyCode = 0x0000
     }
 
     $ReturnValue = $false
@@ -290,7 +305,7 @@ function Test-TargetResource {
                     $NotMatched += 'Icon'
                 }
 
-                if ($PSBoundParameters.ContainsKey('HotKey') -and ($Info.HotKey -ne $HotKeyStr)) {
+                if ($PSBoundParameters.ContainsKey('HotKey') -and ($Info.HotKeyCode -ne $HotKeyCode)) {
                     $NotMatched += 'HotKey'
                 }
 
@@ -660,8 +675,13 @@ function Format-HotKeyString {
     [OutputType([string])]
     Param(
         [Parameter(Mandatory, Position = 0)]
+        [AllowEmptyString()]
         [string]$HotKey
     )
+
+    if ([string]::IsNullOrWhiteSpace($HotKey)) {
+        return [string]::Empty
+    }
 
     [string[]]$local:HotKeyArray = $HotKey.split('+').Trim()
 
@@ -698,6 +718,7 @@ function ConvertFrom-HotKeyString {
     [OutputType([uint16])]
     Param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [AllowEmptyString()]
         [string]$HotKey
     )
 
@@ -712,6 +733,10 @@ function ConvertFrom-HotKeyString {
     }
 
     Process {
+        if ([string]::IsNullOrWhiteSpace($HotKey)) {
+            return 0x0000
+        }
+
         [uint16]$local:HotKeyCode = 0x0000
         $HotKey = Format-HotKeyString -HotKey $HotKey
         [string[]]$local:HotKeyArray = $HotKey.split('+').Trim()
