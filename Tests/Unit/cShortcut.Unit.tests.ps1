@@ -96,6 +96,7 @@ InModuleScope 'cShortcut' {
                 $Result.Description | Should -Be 'Mock_Description'
                 $Result.Icon | Should -Be 'Mock_IconLocation'
                 $Result.HotKey | Should -Be 'Shift+B'
+                $Result.HotKeyCode | Should -Be 0x0141
                 $Result.WindowStyle | Should -Be 'maximized'
                 $Result.AppUserModelID | Should -Be 'Mock_AppUserModelID'
             }
