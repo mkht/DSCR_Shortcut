@@ -4,6 +4,12 @@ if (Test-Path -LiteralPath $ShellLinkPath -PathType Leaf) {
     Add-Type -TypeDefinition (Get-Content -LiteralPath $ShellLinkPath -Raw -Encoding UTF8) -Language 'CSharp' -ErrorAction Stop
 }
 
+# Import VKeyUtil class
+$VKeyUtilPath = Join-Path $PSScriptRoot '..\..\Libs\VKeyUtil\VKeyUtil.cs'
+if (Test-Path -LiteralPath $VKeyUtilPath -PathType Leaf) {
+    Add-Type -TypeDefinition (Get-Content -LiteralPath $VKeyUtilPath -Raw -Encoding UTF8) -Language 'CSharp' -ErrorAction Stop -ReferencedAssemblies System.Windows.Forms
+}
+
 Enum Ensure {
     Absent
     Present
@@ -54,6 +60,10 @@ function Get-TargetResource {
         [string]
         $HotKey,
 
+        [Parameter()]
+        [uint16]
+        $HotKeyCode = 0x0000,
+
         [ValidateSet('normal', 'maximized', 'minimized')]
         [string]
         $WindowStyle = [WindowStyle]::normal,
@@ -87,6 +97,7 @@ function Get-TargetResource {
             Description      = $Shortcut.Description
             Icon             = $Shortcut.IconLocation
             HotKey           = ConvertTo-HotKeyString -HotKeyCode $Shortcut.Hotkey
+            HotKeyCode       = $Shortcut.Hotkey
             WindowStyle      = [WindowStyle]::undefined
             AppUserModelID   = $Shortcut.AppUserModelID
         }
@@ -143,6 +154,10 @@ function Set-TargetResource {
         [string]
         $HotKey,
 
+        [Parameter()]
+        [uint16]
+        $HotKeyCode = 0x0000,
+
         [ValidateSet('normal', 'maximized', 'minimized')]
         [string]
         $WindowStyle = [WindowStyle]::normal,
@@ -151,23 +166,24 @@ function Set-TargetResource {
         [string]$AppUserModelID
     )
 
+    $arg = [HashTable]$PSBoundParameters
+
     if (-not $Path.EndsWith('.lnk')) {
         Write-Verbose ("File extension is not 'lnk'. Automatically add extension")
-        $Path = $Path + '.lnk'
+        $arg.Path = $Path + '.lnk'
     }
 
     if ($Icon -and ($Icon -notmatch ',\d+$')) {
-        $Icon = $Icon + ',0'
+        $arg.Icon = $Icon + ',0'
     }
 
     # Ensure = "Absent"
     if ($Ensure -eq [Ensure]::Absent) {
-        Write-Verbose ('Remove shortcut file "{0}"' -f $Path)
-        Remove-Item -LiteralPath $Path -Force
+        Write-Verbose ('Remove shortcut file "{0}"' -f $arg.Path)
+        Remove-Item -LiteralPath $arg.Path -Force
     }
     else {
         # Ensure = "Present"
-        $arg = $PSBoundParameters
         $null = $arg.Remove('Ensure')
         Update-Shortcut @arg -Force
     }
@@ -213,6 +229,10 @@ function Test-TargetResource {
         [string]
         $HotKey,
 
+        [Parameter()]
+        [uint16]
+        $HotKeyCode = 0x0000,
+
         [ValidateSet('normal', 'maximized', 'minimized')]
         [string]
         $WindowStyle = [WindowStyle]::normal,
@@ -241,12 +261,14 @@ function Test-TargetResource {
         $Icon = $Icon + ',0'
     }
 
-    # HotKey文字列組み立て
+    # HotKey文字列からHotKeyCode（数値表現）を取得
     if ($HotKey) {
-        $HotKeyStr = Format-HotKeyString $HotKey
+        # $HotKeyStr = Format-HotKeyString $HotKey
+        $HotKeyCode = ConvertFrom-HotKeyString -HotKey $HotKey
     }
     else {
-        $HotKeyStr = [string]::Empty
+        # $HotKeyStr = [string]::Empty
+        $HotKeyCode = 0x0000
     }
 
     $ReturnValue = $false
@@ -283,7 +305,7 @@ function Test-TargetResource {
                     $NotMatched += 'Icon'
                 }
 
-                if ($PSBoundParameters.ContainsKey('HotKey') -and ($Info.HotKey -ne $HotKeyStr)) {
+                if ($PSBoundParameters.ContainsKey('HotKey') -and ($Info.HotKeyCode -ne $HotKeyCode)) {
                     $NotMatched += 'HotKey'
                 }
 
@@ -653,31 +675,41 @@ function Format-HotKeyString {
     [OutputType([string])]
     Param(
         [Parameter(Mandatory, Position = 0)]
+        [AllowEmptyString()]
         [string]$HotKey
     )
 
+    if ([string]::IsNullOrWhiteSpace($HotKey)) {
+        return [string]::Empty
+    }
+
     [string[]]$local:HotKeyArray = $HotKey.split('+').Trim()
-    if ($local:HotKeyArray.Count -notin (2..4)) {
+
+    if ($local:HotKeyArray.Count -eq 1 -and $local:HotKeyArray[0] -match '^F([1-9]|1[0-9]|2[0-4])$') {
+        # F1～F24は修飾キーを伴わず単体でもOK
+    }
+    elseif ($local:HotKeyArray.Count -notin (2..4)) {
         #最短で修飾+キーの2要素、最長でAlt+Ctrl+Shift+キーの4要素
         Write-Error 'HotKey is not valid format.'
+        return [string]::Empty
     }
     elseif ($local:HotKeyArray[0] -notmatch '^(Ctrl|Alt|Shift)$') {
         #修飾キーから始まっていないとダメ
         Write-Error 'HotKey is not valid format.'
+        return [string]::Empty
     }
-    else {
-        #優先順位付きソート
-        $local:sort = $local:HotKeyArray | ForEach-Object {
-            switch ($_) {
-                'Alt' { 1 }
-                'Ctrl' { 2 }
-                'Shift' { 3 }
-                Default { 4 }
-            }
+
+    #優先順位付きソート
+    $local:sort = $local:HotKeyArray | ForEach-Object {
+        switch ($_) {
+            'Ctrl' { 1 }
+            'Shift' { 2 }
+            'Alt' { 3 }
+            Default { 4 }
         }
-        [Array]::Sort($local:sort, $local:HotKeyArray)
-        $local:HotKeyArray -join '+'
     }
+    [Array]::Sort($local:sort, $local:HotKeyArray)
+    $local:HotKeyArray -join '+'
 }
 
 
@@ -686,6 +718,7 @@ function ConvertFrom-HotKeyString {
     [OutputType([uint16])]
     Param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [AllowEmptyString()]
         [string]$HotKey
     )
 
@@ -700,6 +733,10 @@ function ConvertFrom-HotKeyString {
     }
 
     Process {
+        if ([string]::IsNullOrWhiteSpace($HotKey)) {
+            return 0x0000
+        }
+
         [uint16]$local:HotKeyCode = 0x0000
         $HotKey = Format-HotKeyString -HotKey $HotKey
         [string[]]$local:HotKeyArray = $HotKey.split('+').Trim()
@@ -721,16 +758,27 @@ function ConvertFrom-HotKeyString {
             }
 
             Default {
+                $local:KeyString = $_
+                $local:KeyCode = $null
                 try {
-                    $local:HotKeyCode = $local:HotKeyCode -bor $KeysConverter.ConvertFromString($_.ToUpper())
+                    $local:KeyCode = $KeysConverter.ConvertFromString($local:KeyString.ToUpper())
                 }
                 catch [ArgumentException] {
-                    Write-Error 'HotKey is not valid format.'
-                    return
+                    try {
+                        $local:KeyCode = [VKeyUtil]::GetKeyCodeFromChar($local:KeyString) -band 0x00ff
+                    }
+                    catch {
+                        Write-Error 'HotKey is not valid format.'
+                        return
+                    }
                 }
                 catch {
                     Write-Error -Exception $_.Exception
                     return
+                }
+
+                if ($null -ne $local:KeyCode) {
+                    $local:HotKeyCode = $local:HotKeyCode -bor $local:KeyCode
                 }
             }
         }
@@ -781,16 +829,27 @@ function ConvertTo-HotKeyString {
         }
 
         # Key
-        try {
-            $local:HotKeyArray += $KeysConverter.ConvertToString($HotKeyCode -band 0x00ff)
-        }
-        catch {
-            Write-Error -Exception $_.Exception
-            return
+        [string]$local:Key = $null
+        try { $local:Key = [VKeyUtil]::GetCharsFromKeys($HotKeyCode -band 0x00ff) } catch {}
+
+        if ([string]::IsNullOrWhiteSpace($local:Key)) {
+            try {
+                $local:Key = $KeysConverter.ConvertToString($HotKeyCode -band 0x00ff)
+            }
+            catch {
+                Write-Error -Exception $_.Exception
+                return
+            }
         }
 
-        # return formatted string
-        Format-HotKeyString -HotKey ([string]::Join('+', $local:HotKeyArray))
+        if (-not [string]::IsNullOrWhiteSpace($local:Key)) {
+            $local:HotKeyArray += $local:Key.ToUpper()
+            # return formatted string
+            Format-HotKeyString -HotKey ([string]::Join('+', $local:HotKeyArray))
+        }
+        else {
+            [string]::Empty
+        }
     }
 
     End {

@@ -90,6 +90,13 @@ Configuration Example2
 ```
 
 ## ChangeLog
+### v2.1.0
+ #### Improvements :zap:
+  - [Regression] Fixed an issue where environment variables in a shortcut file would be unintentionally expanded.
+  - Fixed an issue where `HotKey` would not be determined correctly between multiple different keyboard layouts.
+  - You can now specify the Fn-key for `HotKey` by itself. (In previous versions, it had to be combined with modifier keys.)
+  - Add Unit & Integration tests.
+
 ### v2.0.0
  #### BREAKING CHANGES :boom:
   - v1 of the module initializes properties not specified in the configuration when updating an existing shortcut file, but v2 preserves them.
