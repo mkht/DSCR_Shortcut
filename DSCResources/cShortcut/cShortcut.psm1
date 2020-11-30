@@ -285,7 +285,7 @@ function Test-TargetResource {
             else {
                 # Tests whether the shortcut property is the same as the specified parameter.
                 $NotMatched = @()
-                if ($Info.Target -ne [System.Environment]::ExpandEnvironmentVariables($Target)) {
+                if ($Info.Target -ne $Target) {
                     $NotMatched += 'Target'
                 }
 
