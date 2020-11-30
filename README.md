@@ -90,6 +90,10 @@ Configuration Example2
 ```
 
 ## ChangeLog
+### v2.1.1
+ #### Improvements :zap:
+  - [Regression] Fixed an issue where environment variables in a shortcut file would be unintentionally expanded.
+
 ### v2.1.0
  #### Improvements :zap:
   - [Regression] Fixed an issue where environment variables in a shortcut file would be unintentionally expanded.
