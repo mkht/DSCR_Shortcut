@@ -90,6 +90,9 @@ Configuration Example2
 ```
 
 ## ChangeLog
+### Unreleased
+ #### Bug Fix :bug:
+  - Fixed an issue that the test fails when http / https URLs is specified in Target.
 ### v2.1.1
  #### Improvements :zap:
   - [Regression] Fixed an issue where environment variables in a shortcut file would be unintentionally expanded.

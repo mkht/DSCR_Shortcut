@@ -1,4 +1,4 @@
-﻿# Import ShellLink class
+# Import ShellLink class
 $ShellLinkPath = Join-Path $PSScriptRoot '..\..\Libs\ShellLink\ShellLink.cs'
 if (Test-Path -LiteralPath $ShellLinkPath -PathType Leaf) {
     Add-Type -TypeDefinition (Get-Content -LiteralPath $ShellLinkPath -Raw -Encoding UTF8) -Language 'CSharp' -ErrorAction Stop
@@ -91,7 +91,7 @@ function Get-TargetResource {
         $returnValue = @{
             Ensure           = $Ensure
             Path             = $Path
-            Target           = $Shortcut.TargetPath
+            Target           = $(if ($Shortcut.TargetPath) { $Shortcut.TargetPath }else { $Shortcut.IDList })
             WorkingDirectory = $Shortcut.WorkingDirectory
             Arguments        = $Shortcut.Arguments
             Description      = $Shortcut.Description
