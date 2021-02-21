@@ -24,7 +24,7 @@
     CompanyName          = ''
 
     # このモジュールの著作権情報
-    Copyright            = '(c) 2020 mkht. All rights reserved.'
+    Copyright            = '(c) 2021 mkht. All rights reserved.'
 
     # このモジュールの機能の説明
     Description          = 'PowerShell DSC Resource to create shortcut file.'
