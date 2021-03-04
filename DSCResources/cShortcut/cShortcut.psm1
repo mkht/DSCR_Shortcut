@@ -1,4 +1,4 @@
-# Import ShellLink class
+﻿# Import ShellLink class
 $ShellLinkPath = Join-Path $PSScriptRoot '..\..\Libs\ShellLink\ShellLink.cs'
 if (Test-Path -LiteralPath $ShellLinkPath -PathType Leaf) {
     Add-Type -TypeDefinition (Get-Content -LiteralPath $ShellLinkPath -Raw -Encoding UTF8) -Language 'CSharp' -ErrorAction Stop
@@ -859,3 +859,11 @@ function ConvertTo-HotKeyString {
 
 
 Export-ModuleMember -Function *-TargetResource
+Export-ModuleMember -Function @(
+    'Get-TargetResource',
+    'Set-TargetResource',
+    'Test-TargetResource',
+    'Get-Shortcut',
+    'New-Shortcut',
+    'Update-Shortcut'
+)

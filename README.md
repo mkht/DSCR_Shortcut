@@ -89,10 +89,39 @@ Configuration Example2
 }
 ```
 
+## Functions
+### Get-Shortcut
+Get a lnk file properties.
+
++ **Syntax**
+```PowerShell
+Get-Shortcut [-Path] <string> [-ReadOnly]
+```
+
+### New-Shortcut
+Create a lnk file.
+
++ **Syntax**
+```PowerShell
+New-Shortcut [-Path] <string> [-TargetPath] <string> [-Description <string>] [-Arguments <string>] [-WorkingDirectory <string>] [-Icon <string>] [-HotKey <string>] [-WindowStyle {<normal> | <maximized> | <minimized>}] [-AppUserModelID <string>] [-PassThru] [-Force]
+```
+
+### Update-Shortcut
+Update properties of an exist lnk file.
+
++ **Syntax**
+```PowerShell
+Update-Shortcut [-Path] <string> [-TargetPath] <string> [-Description <string>] [-Arguments <string>] [-WorkingDirectory <string>] [-Icon <string>] [-HotKey <string>] [-WindowStyle {<normal> | <maximized> | <minimized>}] [-AppUserModelID <string>] [-PassThru] [-Force]
+```
+
 ## ChangeLog
 ### Unreleased
+ #### New Features :sparkles:
+  - Export useful functions. `Get-Shortcut`, `New-Shortcut`, `Update-Shortcut`
+
  #### Bug Fix :bug:
   - Fixed an issue that the test fails when http / https URLs is specified in Target.
+
 ### v2.1.1
  #### Improvements :zap:
   - [Regression] Fixed an issue where environment variables in a shortcut file would be unintentionally expanded.
