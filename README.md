@@ -115,7 +115,7 @@ Update-Shortcut [-Path] <string> [-TargetPath] <string> [-Description <string>] 
 ```
 
 ## ChangeLog
-### Unreleased
+### v2.2.0
  #### New Features :sparkles:
   - Export useful functions. `Get-Shortcut`, `New-Shortcut`, `Update-Shortcut`
 
