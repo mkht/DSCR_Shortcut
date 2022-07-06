@@ -115,6 +115,10 @@ Update-Shortcut [-Path] <string> [-TargetPath] <string> [-Description <string>] 
 ```
 
 ## ChangeLog
+### v2.3.0
+ #### Improvements :zap:
+  - Class libraries are included as pre-compiled binaries. This greatly improves module load times. [#14](https://github.com/mkht/DSCR_Shortcut/issues/14)
+
 ### v2.2.0
  #### New Features :sparkles:
   - Export useful functions. `Get-Shortcut`, `New-Shortcut`, `Update-Shortcut`
