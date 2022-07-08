@@ -1,13 +1,13 @@
 ﻿# Import ShellLink class
-$ShellLinkPath = Join-Path $PSScriptRoot '..\..\Libs\ShellLink\ShellLink.cs'
+$ShellLinkPath = Join-Path $PSScriptRoot '..\..\Libs\ShellLink\ShellLink.dll'
 if (Test-Path -LiteralPath $ShellLinkPath -PathType Leaf) {
-    Add-Type -TypeDefinition (Get-Content -LiteralPath $ShellLinkPath -Raw -Encoding UTF8) -Language 'CSharp' -ErrorAction Stop
+    Add-Type -Path $ShellLinkPath -ErrorAction Stop
 }
 
 # Import VKeyUtil class
-$VKeyUtilPath = Join-Path $PSScriptRoot '..\..\Libs\VKeyUtil\VKeyUtil.cs'
+$VKeyUtilPath = Join-Path $PSScriptRoot '..\..\Libs\VKeyUtil\VKeyUtil.dll'
 if (Test-Path -LiteralPath $VKeyUtilPath -PathType Leaf) {
-    Add-Type -TypeDefinition (Get-Content -LiteralPath $VKeyUtilPath -Raw -Encoding UTF8) -Language 'CSharp' -ErrorAction Stop -ReferencedAssemblies System.Windows.Forms
+    Add-Type -Path $VKeyUtilPath -ErrorAction Stop
 }
 
 Enum Ensure {
@@ -598,7 +598,7 @@ function Update-Shortcut {
         }
         elseif ($PSCmdlet.ParameterSetName -eq 'ShellLink') {
             if (-not ($InputObject.FilePath)) {
-                Write-Error -Exception ([System.ArgumentException]::new("The InputObject does not valid."))
+                Write-Error -Exception ([System.ArgumentException]::new('The InputObject does not valid.'))
                 return
             }
         }
